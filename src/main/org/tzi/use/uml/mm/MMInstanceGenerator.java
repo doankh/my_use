@@ -74,30 +74,21 @@ public class MMInstanceGenerator implements MMVisitor {
 
     public void visitAssociation(MAssociation e) {
         String id = genInstance(e, "Association");
-        // add to model namespace
-        fOut.println("!insert (" + fModelId + ", " + id +
-                     ") into Namespace_ModelElement");
-        fOut.println();
-
+        fOut.println( "!set " + id + ".isDerived := " + e.isDerived());
         // visit association ends
         for (MAssociationEnd assocEnd : e.associationEnds()) {
             assocEnd.processWithVisitor(this);
         }
     }
-
+    
+    //------------------
     public void visitAssociationClass( MAssociationClass e ) {
 
         // prints information about associationclass
         if ( !fPass1 ) {
             String id = genInstance( e, "AssociationClass" );
             fOut.println( "!set " + id + ".isAbstract = " + e.isAbstract() );
-            fOut.println( "!set " + id + ".isRoot = false" );
-            fOut.println( "!set " + id + ".isLeaf = false" );
-
-            // add to model namespace
-            fOut.println( "!insert (" + fModelId + ", " + id +
-                          ") into Namespace_ModelElement" );
-            fOut.println();
+            fOut.println( "!set " + id + ".isDerived = " + e.isDerived());
         }
 
         // visit attributes
@@ -105,16 +96,24 @@ public class MMInstanceGenerator implements MMVisitor {
             attr.processWithVisitor( this );
         }
 
+        // visit operations
+        for (MOperation opc : e.operations()){
+        	opc.processWithVisitor(this);
+        }
         // visit association ends
         for (MAssociationEnd assocEnd : e.associationEnds()) {
             assocEnd.processWithVisitor( this );
         }
 
     }
-
+    //in UML 2.4, AssociationEnd becomes Property
     public void visitAssociationEnd(MAssociationEnd e) {
-        String id = genInstance(e, "AssociationEnd", e.association().name());
-        fOut.print("!set " + id + ".aggregation_ := #");
+        String id = genInstance(e, "Property", e.association().name());
+        boolean isComposite = false;
+        fOut.println( "!set " + id + ".isDerived := " + e.isDerived());
+        fOut.println( "!set " + id + ".isDerivedUnion := " + e.isUnion());
+
+        fOut.print("!set " + id + ".aggregation := #");
         switch ( e.aggregationKind() ) {
         case MAggregationKind.NONE:
             fOut.println("none");
@@ -124,18 +123,21 @@ public class MMInstanceGenerator implements MMVisitor {
             break;
         case MAggregationKind.COMPOSITION:
             fOut.println("composite");
+            isComposite = true;
             break;
         default: 
             throw new Error("Fatal error. Invalid multiplicity kind");            
         }
-        // connect to Association
-        fOut.println("!insert (" + 
-                     e.association().name() + "Association, " + 
-                     id + ") into Association_AssociationEnd");
-        // connect to Classifier
-        fOut.println("!insert (" + id + ", " + 
-                     e.cls().name() + 
-                     "Class) into AssociationEnd_Classifier1");
+        
+        fOut.println( "!set " + id + ".isComposite := " + isComposite );
+        if(e.multiplicity().getRanges().size()>0)
+        	fOut.println( "!set " + id + ".lower := " + e.multiplicity().getRanges().get(0).getLower());
+        if(e.multiplicity().getRanges().size()>0)
+        	fOut.println( "!set " + id + ".upper := " + e.multiplicity().getRanges().get(0).getUpper());
+        
+        // add AssociationEnd_Association link
+        fOut.println("!insert (" + e.association().name() + "Association, " + id + 
+                     ") into A_Association_Association_Property_MemberEnd");
         fOut.println();
     }
 
@@ -144,18 +146,27 @@ public class MMInstanceGenerator implements MMVisitor {
             fDataTypes.add(e.type());
             return;
         }
-        String id = genInstance(e, "Attribute", e.owner().name());
-        fOut.println("!insert (" + e.owner().name() + "Class, " + 
-                     id + ") into Classifier_Feature");
+        String id = genInstance(e, "Property",e.owner().name());
+        fOut.println( "!set " + id + ".isDerived := " + e.isDerived());
+        fOut.println( "!set " + id + ".isOrdered := false" );
+        fOut.println( "!set " + id + ".isUnique := false" );
+        fOut.println( "!set " + id + ".isDerivedUnion := false" );
+        fOut.println( "!set " + id + ".isReadOnly := false" );
+        //fOut.println( "!set " + id + ".isID := false" );
 
-        // add StructuralFeature_Classifier link for type of attribute
+        
+        // add Class_Property link
+        fOut.println("!insert (" + e.owner().name() + "Class, " + 
+                     id + ") into C_Class_Class_Property_OwnedAttribute");
+
+        // add Property_Datatype link for type of attribute
         String s;
         if (e.owner().model().getClass(e.type().toString()) == null )
             s = "DataType";
         else 
             s = "Class";
-        fOut.println("!insert (" + id + ", " + e.type() + s +
-                     ") into StructuralFeature_Classifier");
+        fOut.println("!insert (" + e.type() + s + ", " + id +
+                     ") into C_DataType_Datatype_Property_OwnedAttribute");
         fOut.println();
     }
 
@@ -163,12 +174,10 @@ public class MMInstanceGenerator implements MMVisitor {
         if (! fPass1 ) {
             String id = genInstance(e, "Class");
             fOut.println("!set " + id + ".isAbstract := " + e.isAbstract());
-            fOut.println("!set " + id + ".isRoot := false");
-            fOut.println("!set " + id + ".isLeaf := false");
 
-            // add to model namespace
+/*            // add to model namespace
             fOut.println("!insert (" + fModelId + ", " + id +
-                         ") into Namespace_ModelElement");
+                         ") into Namespace_ModelElement");*/
             fOut.println();
         }
 
@@ -191,9 +200,9 @@ public class MMInstanceGenerator implements MMVisitor {
         fOut.println("!insert (" + id + ", " +
                      e.cls().name() + 
                      "Class) into Constraint_ModelElement");
-        // add to model namespace
-        fOut.println("!insert (" + fModelId + ", " + id +
-                     ") into Namespace_ModelElement");
+//        // add to model namespace
+//        fOut.println("!insert (" + fModelId + ", " + id +
+//                     ") into Namespace_ModelElement");
         fOut.println();
     }
 
@@ -208,9 +217,9 @@ public class MMInstanceGenerator implements MMVisitor {
         fOut.println("!insert (" + id + ", " +
                      e.parent().name() + 
                      "Class) into Generalization_GeneralizableElement2");
-        // add to model namespace
-        fOut.println("!insert (" + fModelId + ", " + id +
-                     ") into Namespace_ModelElement");
+//        // add to model namespace
+//        fOut.println("!insert (" + fModelId + ", " + id +
+//                     ") into Namespace_ModelElement");
         fOut.println();
     }
 
@@ -218,8 +227,6 @@ public class MMInstanceGenerator implements MMVisitor {
         // create Model
         fOut.println("-- UML metamodel instance generated by USE " + 
                      Options.RELEASE_VERSION);
-        fOut.println();
-        fModelId = genInstance(e, "Model");
         fOut.println();
 
         fPass1 = true;
@@ -238,17 +245,19 @@ public class MMInstanceGenerator implements MMVisitor {
                 String id = t.toString() + "DataType";
                 fOut.println("!create " + id + " : DataType");
                 fOut.println("!set " + id + ".name := '" + t.toString() + "'");
-                // add to model namespace
-                fOut.println("!insert (" + fModelId + ", " + id +
-                             ") into Namespace_ModelElement");
             }
         }
         fOut.println();
 
         fPass1 = false;
-
+        
         // visit classes
         for (MClass cls : e.classes()) {
+            cls.processWithVisitor(this);
+        }
+        
+        // visit associationclasses
+        for (MAssociationClass cls : e.getAssociationClassesOnly()) {
             cls.processWithVisitor(this);
         }
 
@@ -266,18 +275,40 @@ public class MMInstanceGenerator implements MMVisitor {
         }
 
         // visit constraints
-        for (MClassInvariant inv : e.classInvariants()) {
-            inv.processWithVisitor(this);
-        }
+//        for (MClassInvariant inv : e.classInvariants()) {
+//            inv.processWithVisitor(this);
+//        }
     }
 
     public void visitOperation(MOperation e) {
         //FIXME: implement --> HoangDK 18.08
+    	
+        if (fPass1 ) {
+            if (e.hasResultType()) fDataTypes.add(e.resultType());
+            return;
+        }
     	if (!fPass1 ) {
 	        String id = genInstance(e, "Operation", e.cls().name());
+	        fOut.println( "!set " + id + ".isQuery := false");
+	        fOut.println( "!set " + id + ".isOrdered := false" );
+	        fOut.println( "!set " + id + ".isUnique := false" );
+	        
+	        // add Class_Operation link
 	        fOut.println("!insert (" + e.cls().name() + "Class, " + 
-	                     id + ") into Classifier_Feature");
-	
+	                     id + ") into C_Class_Class_Operation_OwnedOperation");
+
+	        // add Operation_Datatype link for return type of the operation
+	        String s;
+	        if (e.hasResultType())
+	        {
+		        if (e.cls().model().getClass(e.resultType().toString()) == null )
+		            s = "DataType";
+		        //FIXME: no association when the resultType of a operation is a class 
+//		        else 
+//		            s = "Class";
+//		        fOut.println("!insert (" + e.resultType() + s + ", " + id +
+//		                     ") into C_DataType_Datatype_Operation_OwnedOperation");
+	        }
 	        
 	        fOut.println();
     	}

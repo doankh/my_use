@@ -107,6 +107,7 @@ import org.tzi.use.gui.views.diagrams.behavior.communicationdiagram.Communicatio
 import org.tzi.use.gui.views.diagrams.behavior.sequencediagram.SDScrollPane;
 import org.tzi.use.gui.views.diagrams.behavior.sequencediagram.SequenceDiagramView;
 import org.tzi.use.gui.views.diagrams.classdiagram.ClassDiagramView;
+import org.tzi.use.gui.views.diagrams.classdiagram.MClassDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.statemachine.StateMachineDiagramView;
 import org.tzi.use.main.ChangeEvent;
@@ -118,6 +119,8 @@ import org.tzi.use.main.shell.Shell;
 import org.tzi.use.parser.use.USECompiler;
 import org.tzi.use.runtime.gui.impl.PluginActionProxy;
 import org.tzi.use.uml.mm.MClass;
+import org.tzi.use.uml.mm.MMInstanceGenerator;
+import org.tzi.use.uml.mm.MMVisitor;
 import org.tzi.use.uml.mm.MModel;
 import org.tzi.use.uml.mm.ModelFactory;
 import org.tzi.use.uml.mm.statemachines.MProtocolStateMachine;
@@ -281,8 +284,8 @@ public class MainWindow extends JFrame {
         // addToToolBar(toolBar, fActionViewCreateStateTree, "Create state tree
         // view");
 		//for Metamodel class diagram
-		addToToolBar(fToolBar, fActionViewCreateMClassDiagram,
-                "Create metamodel class diagram view");
+		//addToToolBar(fToolBar, fActionViewCreateMClassDiagram,
+        //        "Create metamodel class diagram view");
         // create the menubar
 		fMenuBar = new JMenuBar();
 		getRootPane().setJMenuBar(fMenuBar);
@@ -448,6 +451,16 @@ public class MainWindow extends JFrame {
         mi.setMnemonic('T');
         mi = menu.add(fActionViewCloseAll);
         mi.setMnemonic('a');
+
+        // create Meta model menu
+        menu = new JMenu("Meta Model");
+        menu.setMnemonic('M');
+		fMenuBar.add(menu);
+		mi = menu.add(fActionViewCreateMClassDiagram);
+        
+        mi = menu.add(fActionViewCreateSimplifiedMClassDiagram);
+        
+        mi = menu.add(fActionGenerateMetamodelInstances);
 
         // create the browser panel
 		fModelBrowser = new ModelBrowser(this, fPluginRuntime);
@@ -1040,10 +1053,16 @@ public class MainWindow extends JFrame {
 
     private final ActionViewCreateLinkCount fActionViewCreateLinkCount = new ActionViewCreateLinkCount();
 
-    private final ActionViewCreateClassDiagram fActionViewCreateClassDiagram = new ActionViewCreateClassDiagram(false,"ClassDiagram.gif");
+    private final ActionViewCreateClassDiagram fActionViewCreateClassDiagram = new ActionViewCreateClassDiagram(false, false,"ClassDiagram.gif");
+    //**Meta model menu
+    //metamodel class diagram
+    private final ActionViewCreateClassDiagram fActionViewCreateMClassDiagram = new ActionViewCreateClassDiagram(true, false, "MClassDiagram.png");
     
-    //for metamodel class diagram
-    private final ActionViewCreateClassDiagram fActionViewCreateMClassDiagram = new ActionViewCreateClassDiagram(true, "MClassDiagram.png");
+    //simplied metamodel class diagram
+    private final ActionViewCreateClassDiagram fActionViewCreateSimplifiedMClassDiagram = new ActionViewCreateClassDiagram(true, true, "");
+    
+    //metamodel class diagram
+    private final ActionGenerateMetamodelInstances fActionGenerateMetamodelInstances = new ActionGenerateMetamodelInstances();
 
     private final StateMachineDropdown fStateMachineDropdown = new StateMachineDropdown();
     
@@ -1722,14 +1741,16 @@ public class MainWindow extends JFrame {
     }
 
     /**
-     * Creates a new class diagram view.
+     * Creates a new class diagram view or metamodel class diagram view.
      */
     private class ActionViewCreateClassDiagram extends AbstractAction {
         private boolean isMetamodel;
+        private boolean isSimplifiedMModel;
         private String iconName;
-    	ActionViewCreateClassDiagram(boolean _isMetamodel, String _iconName) {
-            super("Class diagram", getIcon(_iconName));
+    	ActionViewCreateClassDiagram(boolean _isMetamodel, boolean _isSimplified, String _iconName) {
+            super(!_isMetamodel? "Class diagram": _isSimplified? "Simplified Meta Model":"Full Meta Model", getIcon(_iconName));
             isMetamodel = _isMetamodel;
+            isSimplifiedMModel = _isSimplified;
             iconName= _iconName;
         }
 
@@ -1738,7 +1759,9 @@ public class MainWindow extends JFrame {
         	// Don' load layout if shift key is pressed
         	boolean loadLayout = (e.getModifiers() & ActionEvent.SHIFT_MASK) == 0;
         	String  windowTitle = isMetamodel==false?"Class diagram":"Metamodel Class diagram";      	
-            ClassDiagramView cdv = new ClassDiagramView(MainWindow.this, fSession.system(), loadLayout,isMetamodel);
+            ClassDiagramView cdv;
+            if(isMetamodel)cdv = new MClassDiagramView(MainWindow.this, fSession.system(), loadLayout,isSimplifiedMModel);
+            else cdv = new ClassDiagramView(MainWindow.this, fSession.system(), loadLayout,false);
             ViewFrame f = new ViewFrame(windowTitle, cdv, iconName);
             // give some help information
             f.addInternalFrameListener(new InternalFrameAdapter() {
@@ -1766,7 +1789,37 @@ public class MainWindow extends JFrame {
             classDiagrams.add(cdv);
         }
     }
-
+	/**
+	 * Generates metamodel instances of the loaded model into a soil file  
+	 * @author KHANHHOANG
+	 */
+    private class ActionGenerateMetamodelInstances extends AbstractAction{
+    	ActionGenerateMetamodelInstances()
+    	{
+    		super("Generate MM instances...", getIcon("document-print.png"));
+    	}
+    	@Override
+    	public void actionPerformed(ActionEvent e) {		
+    			MSystem system = fSession.system();
+    			PrintWriter out = null;
+    			String filename = "metamodels/mm_instances.soil";
+				try {
+					out = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
+					MMVisitor v = new MMInstanceGenerator(out);
+    				system.model().processWithVisitor(v);
+    			} catch (IOException ex) {
+    				Log.error(ex.getMessage());
+    			} finally {
+    				if (out != null) {
+    					out.flush();
+    					if (filename != null) {
+    						out.close();
+    					}
+    				}
+    			}
+    	}
+    }
+    
     /**
      * Button for statemachine selection from the toolbar.
      */

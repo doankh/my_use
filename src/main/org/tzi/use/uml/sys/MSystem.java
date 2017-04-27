@@ -119,7 +119,10 @@ public final class MSystem {
 	
 	/** The current system state. */
 	private MSystemState fCurrentState;
-
+	
+	/** The Metamodel system state	 */
+	private MSystemState fMetaState;
+	
 	/** The set of all objects */
 	private Map<String, MObject> fObjects;
 
@@ -233,6 +236,13 @@ public final class MSystem {
 		return fCurrentState;
 	}
 
+	/**
+	 * Returns the metamodel system state.
+	 */
+	public MSystemState metaState() {
+		return fMetaState;
+	}
+	
 	/**
 	 * Returns the system's model.
 	 */
@@ -1008,9 +1018,9 @@ public final class MSystem {
 	 * @param objectName
 	 * @throws MSystemException
 	 */
-	public MObject createObject(StatementEvaluationResult result, MClass objectClass, String objectName) throws MSystemException {
+	public MObject createObject(StatementEvaluationResult result, MClass objectClass, String objectName, boolean isMetamodel) throws MSystemException {
 
-		MObject newObject = fCurrentState.createObject(objectClass, objectName);
+		MObject newObject = isMetamodel? fCurrentState.createObject(objectClass, objectName):fMetaState.createObject(objectClass, objectName);
 		result.getStateDifference().addNewObject(newObject);
 		result.prependToInverseStatement(new MObjectDestructionStatement(newObject.value()));
 
@@ -1364,7 +1374,7 @@ public final class MSystem {
 		}
 
 		try {
-			statement.execute(context, result);
+			statement.execute(context, result, false);
 		} catch (EvaluationFailedException e) {
 			result.setException(e);
 		}

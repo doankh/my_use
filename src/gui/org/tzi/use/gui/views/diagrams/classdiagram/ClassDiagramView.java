@@ -61,7 +61,7 @@ public class ClassDiagramView extends JPanel
     private final MSystem fSystem;
     
     private ClassDiagram fClassDiagram;
-
+/*
     public ClassDiagramView( MainWindow mainWindow, MSystem system, boolean loadLayout ) { 
     	this.setFocusable(true);
         fMainWindow = mainWindow;
@@ -69,6 +69,7 @@ public class ClassDiagramView extends JPanel
         setLayout( new BorderLayout() );
         initDiagram(loadLayout, null, false);
     }
+    */
     public ClassDiagramView( MainWindow mainWindow, MSystem system, boolean loadLayout, boolean isMetamodel ) { 
     	this.setFocusable(true);
         fMainWindow = mainWindow;
@@ -98,6 +99,10 @@ public class ClassDiagramView extends JPanel
         return fSystem;
     }
     
+    public ClassDiagram classDiagram()
+    {
+    	return fClassDiagram;
+    }
     /**
      * Returns the model browser.
      */
@@ -156,16 +161,8 @@ public class ClassDiagramView extends JPanel
         }
         
         fClassDiagram.initialize();
-        //HoangDK - test hide all elements when creating the metamodel CD
-        MClass hidedCls = null;
-        for(MClass cls: allClasses)
-        	if(cls.name().equals("Classifier"))
-        	{
-        		hidedCls = cls;
-        		break;
-        	}
-        fClassDiagram.hideClass(hidedCls);
     }
+    
     
     @Override
 	public void printView( PageFormat pf ) {

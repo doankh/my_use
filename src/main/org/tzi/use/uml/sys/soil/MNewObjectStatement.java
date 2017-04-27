@@ -90,7 +90,7 @@ public class MNewObjectStatement extends MStatement {
     }
 
     @Override
-    public Value execute(SoilEvaluationContext context, StatementEvaluationResult result) throws EvaluationFailedException {
+    public Value execute(SoilEvaluationContext context, StatementEvaluationResult result, boolean isMetaStatement) throws EvaluationFailedException {
 
     	String objectName;
         if (fObjectName == null) {
@@ -101,7 +101,7 @@ public class MNewObjectStatement extends MStatement {
 
         // create new object
         try {
-            return new ObjectValue(fObjectClass, context.getSystem().createObject(result, fObjectClass, objectName));
+            return new ObjectValue(fObjectClass, context.getSystem().createObject(result, fObjectClass, objectName, isMetaStatement));
         } catch (MSystemException e) {
             throw new EvaluationFailedException(e);
         }

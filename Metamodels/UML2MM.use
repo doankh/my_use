@@ -1938,12 +1938,12 @@ association A_Class_Class_Class_SuperClass between
 end
 
 -- TODO: Structured Classfier already defines this composition (Class < EncapsulatedClassifier < StructuredClassifier)
-/*
+
 composition C_Class_Class_Property_OwnedAttribute between
   Class[0..1] role _class subsets classifier subsets namespace subsets featuringClassifier
   Property[*] role ownedAttribute ordered subsets attribute subsets ownedMember subsets feature
 end
-*/
+
 composition C_Class_Class_Classifier_NestedClassifier between
   Class[0..1] role class subsets namespace subsets redefinitionContext
   Classifier[*] role nestedClassifier ordered subsets ownedMember subsets notNavigableRedefinitionContext
@@ -1986,7 +1986,7 @@ association A_Property_Property_Property_Opposite between
 	endif
 end
 
-association A_Property_MemberEnd_Association_Association between
+association A_Association_Association_Property_MemberEnd between
   Association[0..1] role association subsets notNavigableMember
   Property[2..*] role memberEnd ordered subsets member
 end
@@ -2656,7 +2656,7 @@ end
 composition C_StructuredClassifier_StructuredClassifier_Property_OwnedAttribute between
   StructuredClassifier[0..1] role notNavigableOwnedAttribute2 
 	/* not mentioned in Spec.: */ subsets notNavigableRole subsets namespace subsets classifier subsets featuringClassifier
-  Property[*] role ownedAttribute ordered subsets _role subsets ownedMember subsets attribute subsets feature
+  Property[*] role ownedAttributes ordered subsets _role subsets ownedMember subsets attribute subsets feature
 end
 
 association A_StructuredClassifier_StructuredClassifier_Property_Part between
@@ -2731,7 +2731,7 @@ end
 
 composition C_EncapsulatedClassifier_EncapsulatedClassifier_Port_OwnedPort between
   EncapsulatedClassifier[0..1] role notNavigableOwnedPort subsets redefinitionContext
-  Port[*] role ownedPort subsets ownedAttribute -- derived
+  Port[*] role ownedPort -- derived
 end
 
 association A_Port_Port_Port_RedefinedPort between

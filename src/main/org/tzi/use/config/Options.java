@@ -411,7 +411,7 @@ public class Options {
         setLastDirectory(homeDir);
         iconDir = homeDir.resolve("images");
 		pluginDir = homeDir.resolve("lib").resolve("plugins");
-		metamodelFilename = homeDir.resolve("Metamodels").resolve(METAMODEL_FILE);
+		metamodelFilename = homeDir.resolve("metamodels").resolve(METAMODEL_FILE);
         if (quiet && (specFilename == null || cmdFilename == null) ) {
 			System.err
 					.println("Need specification file and command file with option -q,"
