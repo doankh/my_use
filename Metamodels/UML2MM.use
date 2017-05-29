@@ -680,8 +680,8 @@ composition C_MultiplicityElement_OwningLower_ValueSpecification_LowerValue betw
 end
 
 association A_TypedElement_TypedElement_Type_Type between
-  TypedElement[*]
-  Type[0..1]
+  TypedElement[*] role typeElement
+  Type[0..1] role type
 end
 
 --------------------------------------------------------------------------------------------------------

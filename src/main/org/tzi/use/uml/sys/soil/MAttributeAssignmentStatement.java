@@ -111,7 +111,7 @@ public class MAttributeAssignmentStatement extends MStatement {
 	}
 
 	@Override
-    public Value execute(SoilEvaluationContext context, StatementEvaluationResult result, boolean isMetaStatement)
+    public Value execute(SoilEvaluationContext context, StatementEvaluationResult result)
             throws EvaluationFailedException {
 		
 		// get the actual object
@@ -121,7 +121,7 @@ public class MAttributeAssignmentStatement extends MStatement {
         Value newValue = EvalUtil.evaluateRValue(context, result, fRValue, false);
 		
         try {
-            context.getSystem().assignAttribute(result, object, fAttribute, newValue,isMetaStatement);
+            context.getSystem().assignAttribute(result, object, fAttribute, newValue);
         } catch (MSystemException e) {
             throw new EvaluationFailedException(e.getMessage());
         }

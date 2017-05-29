@@ -23,9 +23,12 @@ package org.tzi.use.gui.views.diagrams.classdiagram;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.tzi.use.gui.main.MainWindow;
+import org.tzi.use.uml.mm.MAssociation;
 import org.tzi.use.uml.mm.MClass;
+import org.tzi.use.uml.mm.MGeneralization;
 import org.tzi.use.uml.mm.MModel;
 import org.tzi.use.uml.sys.MSystem;
 
@@ -34,20 +37,21 @@ import org.tzi.use.uml.sys.MSystem;
  * current instance of MModel
  *
  * @version $ProjectVersion: 0.393 $
- * @author Fabian Gutsche
+ * @author Hoang Doan
  * */
 @SuppressWarnings("serial")
 public class MClassDiagramView extends ClassDiagramView{
-
-    public MClassDiagramView( MainWindow mainWindow, MSystem system, boolean loadLayout, boolean isSimplied) { 
-    	super(mainWindow,system,loadLayout, true);
-    	MModel mModel = system().mmodel();
+	Collection<MClass> relatedMMClasses;
+	Collection<MAssociation> relatedMMAssociations;
+    public MClassDiagramView( MainWindow mainWindow, MSystem system, MSystem metaSystem, boolean loadLayout, boolean isSimplied) { 
+    	super(mainWindow,system,metaSystem,loadLayout,true);
+    	MModel mModel = metaSystem.model();
     	//hide all elements when creating the metamodel
     	if(isSimplied)//Simplied Class Diagram Metamodel
     	{
     		classDiagram().hideAll();
-    		Collection<MClass> mmClasses = getRelatedMMClasses();
-	        for(MClass cls: mmClasses)
+    		getRelatedMMClassesAndAssos();
+	        for(MClass cls: relatedMMClasses)
 	        	classDiagram().showClass(cls);
 	        //Hide the unused associations. Is there a possible method to recognize these associations?
 	        //e.g. No redefined Property --> no A_Property_Property_Property_RedefinedProperty association
@@ -64,23 +68,26 @@ public class MClassDiagramView extends ClassDiagramView{
     /*
      * 
      */
-    private Collection<MClass> getRelatedMMClasses()
+    private void getRelatedMMClassesAndAssos()
     {
 		MModel mModel = system().model();
-		MModel mmModel = system().mmodel();
-    	Collection<MClass> mmClasses = new ArrayList<MClass>();
-		mmClasses.add(mmModel.getClass("Class"));
-		mmClasses.add(mmModel.getClass("DataType"));
+		MModel mmModel = metaSystem().model();
+		relatedMMClasses = new ArrayList<MClass>();
+		relatedMMAssociations = new ArrayList<MAssociation>();
+		relatedMMClasses.add(mmModel.getClass("Class"));
+		relatedMMClasses.add(mmModel.getClass("DataType"));
 		Collection<MClass> allClasses = mModel.classes();
 		MClass mCls = null;
-		
+		MAssociation mAsso = null;
 		for(MClass cls:allClasses)
 			if(!cls.attributes().isEmpty())
 			{
 				mCls = mmModel.getClass("Property");
+				mAsso = mmModel.getAssociation("C_Class_Class_Property_OwnedAttribute");
 				if(mCls !=null)
 				{
-					mmClasses.add(mCls);
+					relatedMMClasses.add(mCls);
+					relatedMMAssociations.add(mAsso);
 				}
 				break;
 			}
@@ -88,29 +95,28 @@ public class MClassDiagramView extends ClassDiagramView{
 			if(!cls.operations().isEmpty())
 			{
 				mCls = mmModel.getClass("Operation");
-				if(mCls !=null) mmClasses.add(mCls);
+				if(mCls !=null) relatedMMClasses.add(mCls);
 				break;
 			}
 		if(!mModel.associations().isEmpty())
 		{
 			mCls = mmModel.getClass("Association");
-			if(mCls !=null) mmClasses.add(mCls);
+			if(mCls !=null) relatedMMClasses.add(mCls);
 		}
 		
 		if(!mModel.getAssociationClassesOnly().isEmpty())
 		{
 			mCls = mmModel.getClass("AssociationClass");
-			if(mCls !=null) mmClasses.add(mCls);
+			if(mCls !=null) relatedMMClasses.add(mCls);
 		}
-//		Iterator<MGeneralization> it = mModel.generalizationGraph().edgeIterator();
-//		if(it.hasNext())
-//		{
-//			mCls = mModel.getClass("Generalization");
-//			if(mCls !=null)
-//				mmClasses.add(mCls);
-//		}
+		Iterator<MGeneralization> it = mModel.generalizationGraph().edgeIterator();
+		if(it.hasNext())
+		{
+			mCls = mmModel.getClass("Generalization");
+			if(mCls !=null)
+				relatedMMClasses.add(mCls);
+		}
 
-    	return mmClasses;
     	
     }
     

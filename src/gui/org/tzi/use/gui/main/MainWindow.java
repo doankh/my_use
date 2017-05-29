@@ -52,6 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -116,11 +117,11 @@ import org.tzi.use.main.Session;
 import org.tzi.use.main.Session.EvaluatedStatement;
 import org.tzi.use.main.runtime.IRuntime;
 import org.tzi.use.main.shell.Shell;
+import org.tzi.use.parser.shell.ShellCommandCompiler;
 import org.tzi.use.parser.use.USECompiler;
 import org.tzi.use.runtime.gui.impl.PluginActionProxy;
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.mm.MMInstanceGenerator;
-import org.tzi.use.uml.mm.MMVisitor;
 import org.tzi.use.uml.mm.MModel;
 import org.tzi.use.uml.mm.ModelFactory;
 import org.tzi.use.uml.mm.statemachines.MProtocolStateMachine;
@@ -460,7 +461,7 @@ public class MainWindow extends JFrame {
         
         mi = menu.add(fActionViewCreateSimplifiedMClassDiagram);
         
-        mi = menu.add(fActionGenerateMetamodelInstances);
+        mi = menu.add(fActionGenerateMetamodelObjectDiagram);
 
         // create the browser panel
 		fModelBrowser = new ModelBrowser(this, fPluginRuntime);
@@ -1061,12 +1062,12 @@ public class MainWindow extends JFrame {
     //simplied metamodel class diagram
     private final ActionViewCreateClassDiagram fActionViewCreateSimplifiedMClassDiagram = new ActionViewCreateClassDiagram(true, true, "");
     
-    //metamodel class diagram
-    private final ActionGenerateMetamodelInstances fActionGenerateMetamodelInstances = new ActionGenerateMetamodelInstances();
+    //metamodel object diagram
+    private final ActionViewCreateObjectDiagram fActionGenerateMetamodelObjectDiagram = new ActionViewCreateObjectDiagram(true);
 
     private final StateMachineDropdown fStateMachineDropdown = new StateMachineDropdown();
     
-    private final ActionViewCreateObjectDiagram fActionViewCreateObjectDiagram = new ActionViewCreateObjectDiagram();
+    private final ActionViewCreateObjectDiagram fActionViewCreateObjectDiagram = new ActionViewCreateObjectDiagram(false);
 
     private final ActionViewCreateClassInvariant fActionViewCreateClassInvariant = new ActionViewCreateClassInvariant();
 
@@ -1165,17 +1166,19 @@ public class MainWindow extends JFrame {
                 fLogWriter.println("File `" + f.toAbsolutePath().toString() + "' not found.");
             }
             
-            final MSystem system;
+            final MSystem system, metaSystem;
+            
             if (model != null) {
             	fLogWriter.println(model.getStats());
             	//compile the metamodel
             	MModel mmodel = null;
             	mmodel = mcompile(Options.metamodelFilename);
             	// create system
-            	system = new MSystem(model,mmodel);
-            	
+            	system = new MSystem(model);
+            	metaSystem = new MSystem(mmodel);
             } else {
             	system = null;
+            	metaSystem = null;
             }
             
             // set new system (may be null if compilation failed)
@@ -1183,6 +1186,7 @@ public class MainWindow extends JFrame {
                 @Override
 				public void run() {
                     fSession.setSystem(system);
+                    fSession.setMetaSystem(metaSystem);
                 }
             });
             
@@ -1760,8 +1764,8 @@ public class MainWindow extends JFrame {
         	boolean loadLayout = (e.getModifiers() & ActionEvent.SHIFT_MASK) == 0;
         	String  windowTitle = isMetamodel==false?"Class diagram":"Metamodel Class diagram";      	
             ClassDiagramView cdv;
-            if(isMetamodel)cdv = new MClassDiagramView(MainWindow.this, fSession.system(), loadLayout,isSimplifiedMModel);
-            else cdv = new ClassDiagramView(MainWindow.this, fSession.system(), loadLayout,false);
+            if(isMetamodel)cdv = new MClassDiagramView(MainWindow.this, fSession.system(), fSession.metaSystem(), loadLayout,isSimplifiedMModel);
+            else cdv = new ClassDiagramView(MainWindow.this, fSession.system(), fSession.metaSystem(), loadLayout,false);
             ViewFrame f = new ViewFrame(windowTitle, cdv, iconName);
             // give some help information
             f.addInternalFrameListener(new InternalFrameAdapter() {
@@ -1789,36 +1793,7 @@ public class MainWindow extends JFrame {
             classDiagrams.add(cdv);
         }
     }
-	/**
-	 * Generates metamodel instances of the loaded model into a soil file  
-	 * @author KHANHHOANG
-	 */
-    private class ActionGenerateMetamodelInstances extends AbstractAction{
-    	ActionGenerateMetamodelInstances()
-    	{
-    		super("Generate MM instances...", getIcon("document-print.png"));
-    	}
-    	@Override
-    	public void actionPerformed(ActionEvent e) {		
-    			MSystem system = fSession.system();
-    			PrintWriter out = null;
-    			String filename = "metamodels/mm_instances.soil";
-				try {
-					out = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
-					MMVisitor v = new MMInstanceGenerator(out);
-    				system.model().processWithVisitor(v);
-    			} catch (IOException ex) {
-    				Log.error(ex.getMessage());
-    			} finally {
-    				if (out != null) {
-    					out.flush();
-    					if (filename != null) {
-    						out.close();
-    					}
-    				}
-    			}
-    	}
-    }
+	
     
     /**
      * Button for statemachine selection from the toolbar.
@@ -1895,13 +1870,24 @@ public class MainWindow extends JFrame {
      * Creates a new object diagram view.
      */
     private class ActionViewCreateObjectDiagram extends AbstractAction {
-        ActionViewCreateObjectDiagram() {
-            super("Object diagram", getIcon("ObjectDiagram.gif"));
+    	private boolean isMetamodel;
+    	//private String iconName;
+    	ActionViewCreateObjectDiagram(boolean _isMetamodel) {
+            super(!_isMetamodel? "Object diagram": "Meta model Object diagram", getIcon("ObjectDiagram.gif"));
+            isMetamodel = _isMetamodel;
         }
 
         @Override
 		public void actionPerformed(ActionEvent e) {
-            NewObjectDiagramView odv = new NewObjectDiagramView(MainWindow.this, fSession.system());
+        	MSystem system;
+        	if(isMetamodel)
+        	{
+        		system = fSession.metaSystem();
+        		generateMetaObjects();
+        	}
+        	else
+        		system = fSession.system();
+            NewObjectDiagramView odv = new NewObjectDiagramView(MainWindow.this, system);
             ViewFrame f = new ViewFrame("Object diagram", odv, "ObjectDiagram.gif");
             
             // give some help information
@@ -1943,6 +1929,45 @@ public class MainWindow extends JFrame {
             c.add(odv, BorderLayout.CENTER);
             addNewViewFrame(f);
             objectDiagrams.add(odv);
+        }
+        /**
+    	 * Generates metamodel instances of the loaded model into a soil file  
+    	 * @author Doan Hoang
+    	 */
+        
+    	private void generateMetaObjects() {		
+    		MSystem system = fSession.system();
+    		MSystem metaSystem = fSession.metaSystem();
+
+    		MMInstanceGenerator v = new MMInstanceGenerator(metaSystem);
+    		system.model().processWithVisitor(v);
+    		LinkedList<String> genSoilCommands = v.getGeneratedShellCommands();	
+    		
+    		for (int i = 0; i < genSoilCommands.size(); i++)
+    		{
+    			try {
+    				metaSystem.execute(translateSoilCommandtoStatement(metaSystem,genSoilCommands.get(i)));
+    			} catch (MSystemException e1) {
+    				// TODO Auto-generated catch block
+    				e1.printStackTrace();
+    			}
+    		}
+        }
+    	/*
+         * Translate a soilcommand to a statement which can be executed from code
+         */
+        private MStatement translateSoilCommandtoStatement(MSystem fSystem, String line)
+        {
+        	MStatement statement = ShellCommandCompiler.compileShellCommand(
+    				fSystem.model(),
+    				fSystem.state(),
+    				fSystem.getVariableEnvironment(),
+    				line,
+    				"<input>",
+    				new PrintWriter(System.err),
+    				false);
+
+        	return statement;
         }
     }
     
@@ -2319,6 +2344,7 @@ public class MainWindow extends JFrame {
         
         return dv;
 	}
+	
 	
 	private Icon getIcon(String name) {
 		return new ImageIcon(Options.getIconPath(name).toString());

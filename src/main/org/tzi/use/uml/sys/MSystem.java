@@ -114,15 +114,9 @@ public final class MSystem {
 	/** The model of this system. */
 	private MModel fModel;
 
-	/** The metamodel of this system. */
-	private MModel fMModel;
-	
 	/** The current system state. */
 	private MSystemState fCurrentState;
-	
-	/** The Metamodel system state	 */
-	private MSystemState fMetaState;
-	
+
 	/** The set of all objects */
 	private Map<String, MObject> fObjects;
 
@@ -188,24 +182,14 @@ public final class MSystem {
 
 	/**
 	 * constructs a new MSystem
-	 * @param model the model of this system
-	 * @param model the metamodel of this system
-	 */
-	public MSystem(MModel model, MModel mmodel) {
-		fModel = model;
-		fMModel = mmodel;
-		init();
-	}
-	/**
-	 * constructs a new MSystem
 	 * 
 	 * @param model the model of this system
 	 */
 	public MSystem(MModel model) {
 		fModel = model;
-		fMModel = null;
 		init();
 	}
+
 	/**
 	 * Initializes a system (used for new system instances and for
 	 * {@link #reset()})
@@ -237,26 +221,12 @@ public final class MSystem {
 	}
 
 	/**
-	 * Returns the metamodel system state.
-	 */
-	public MSystemState metaState() {
-		return fMetaState;
-	}
-	
-	/**
 	 * Returns the system's model.
 	 */
 	public MModel model() {
 		return fModel;
 	}
 
-	/**
-	 * Returns the system's metamodel.
-	 */
-	public MModel mmodel() {
-		return fMModel;
-	}
-	
 	/**
 	 * Returns the system's instance generator.
 	 */
@@ -1018,9 +988,9 @@ public final class MSystem {
 	 * @param objectName
 	 * @throws MSystemException
 	 */
-	public MObject createObject(StatementEvaluationResult result, MClass objectClass, String objectName, boolean isMetamodel) throws MSystemException {
+	public MObject createObject(StatementEvaluationResult result, MClass objectClass, String objectName) throws MSystemException {
 
-		MObject newObject = isMetamodel? fCurrentState.createObject(objectClass, objectName):fMetaState.createObject(objectClass, objectName);
+		MObject newObject = fCurrentState.createObject(objectClass, objectName);
 		result.getStateDifference().addNewObject(newObject);
 		result.prependToInverseStatement(new MObjectDestructionStatement(newObject.value()));
 
@@ -1374,7 +1344,7 @@ public final class MSystem {
 		}
 
 		try {
-			statement.execute(context, result, false);
+			statement.execute(context, result);
 		} catch (EvaluationFailedException e) {
 			result.setException(e);
 		}

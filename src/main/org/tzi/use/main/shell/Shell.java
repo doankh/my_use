@@ -66,7 +66,6 @@ import org.tzi.use.runtime.shell.impl.PluginShellCmdFactory.PluginShellCmdContai
 import org.tzi.use.uml.mm.MAssociation;
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.mm.MClassInvariant;
-import org.tzi.use.uml.mm.MMInstanceGenerator;
 import org.tzi.use.uml.mm.MMPrintVisitor;
 import org.tzi.use.uml.mm.MMVisitor;
 import org.tzi.use.uml.mm.MModel;
@@ -750,7 +749,7 @@ public final class Shell implements Runnable, PPCHandler {
 	 * Prints commands for generating a metamodel instance.
 	 */
 	private void cmdGenMM(String filename) throws NoSystemException {
-		MSystem system = system();
+		/*MSystem system = system();
 		PrintWriter out = null;
 		try {
 			if (filename == null) {
@@ -770,7 +769,7 @@ public final class Shell implements Runnable, PPCHandler {
 					out.close();
 				}
 			}
-		}
+		}*/
 	}
 
 	/**

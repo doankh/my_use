@@ -33,7 +33,6 @@ import org.tzi.use.util.soil.exceptions.EvaluationFailedException;
  *
  * @author Fabian Buettner
  * @author Daniel Gent
- * @author Khanh-Hoang Doan
  */
 public abstract class MStatement {
 
@@ -41,7 +40,6 @@ public abstract class MStatement {
 	 * The source position of the statement (if specified).
 	 */
 	private SrcPos fSourcePosition;
-	private boolean isMetaStatement;
 	
 	private static final String SHELL_PREFIX = "!";
 	
@@ -74,7 +72,7 @@ public abstract class MStatement {
      * @param hasUndoStatement
      * @throws EvaluationFailedException
 	 */
-    public abstract Value execute(SoilEvaluationContext context, StatementEvaluationResult result, boolean isMetaStatement) throws EvaluationFailedException;
+    public abstract Value execute(SoilEvaluationContext context, StatementEvaluationResult result) throws EvaluationFailedException;
 
 	/**
      * Returns the shell command for the statement prefixed by the shell prefix

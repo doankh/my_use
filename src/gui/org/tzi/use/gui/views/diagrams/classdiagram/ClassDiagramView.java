@@ -59,6 +59,7 @@ public class ClassDiagramView extends JPanel
     private final MainWindow fMainWindow;
     
     private final MSystem fSystem;
+    private final MSystem fMetaSystem;
     
     private ClassDiagram fClassDiagram;
 /*
@@ -70,10 +71,11 @@ public class ClassDiagramView extends JPanel
         initDiagram(loadLayout, null, false);
     }
     */
-    public ClassDiagramView( MainWindow mainWindow, MSystem system, boolean loadLayout, boolean isMetamodel ) { 
+    public ClassDiagramView( MainWindow mainWindow, MSystem system, MSystem metaSystem, boolean loadLayout, boolean isMetamodel) { 
     	this.setFocusable(true);
         fMainWindow = mainWindow;
         fSystem = system;
+        fMetaSystem = metaSystem;
         setLayout( new BorderLayout() );
         initDiagram(loadLayout, null, isMetamodel);
     }
@@ -97,6 +99,10 @@ public class ClassDiagramView extends JPanel
     
     public MSystem system() {
         return fSystem;
+    }
+    
+    public MSystem metaSystem() {
+        return fMetaSystem;
     }
     
     public ClassDiagram classDiagram()
@@ -128,7 +134,7 @@ public class ClassDiagramView extends JPanel
      * instance.
      */
     private void initState(boolean isMetamodel) {
-    	MModel model = (isMetamodel==false?fSystem.model(): fSystem.mmodel());
+    	MModel model = (isMetamodel==false?fSystem.model(): fMetaSystem.model());
         // read Classes
         Collection<MClass> allClasses = model.classes();
         for (MClass cls : allClasses) {

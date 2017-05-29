@@ -35,9 +35,11 @@ import org.tzi.use.uml.sys.soil.MStatement;
  *
  * @version     $ProjectVersion: 0.393 $
  * @author      Mark Richters 
+ * @author      Hoang Doan
  */
 public class Session {
     private MSystem fSystem;
+    private MSystem fMetaSystem; //for Meta model system
     private List<ChangeListener> fListenerStateChange;
     private List<EvaluatedStatementListener> fListenerEvaluatedStatement;
 
@@ -70,6 +72,9 @@ public class Session {
         fireStateChanged();
     }
 
+    public void setMetaSystem(MSystem metaSystem) {
+        fMetaSystem = metaSystem;
+    }
     /** 
      * Returns true if we have a system.
      */
@@ -100,6 +105,15 @@ public class Session {
         if (fSystem == null )
             throw new IllegalStateException("no system");
         return fSystem;
+    }
+    /**
+     * 
+     * Return the current meta model system 
+     */
+    public MSystem metaSystem(){
+    	if (fMetaSystem == null )
+            throw new IllegalStateException("no meta model system");
+        return fMetaSystem;
     }
 
     public void addChangeListener(ChangeListener l) {

@@ -21,15 +21,15 @@
 
 package org.tzi.use.uml.mm;
 
-import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
 
-import org.tzi.use.config.Options;
 import org.tzi.use.uml.mm.commonbehavior.communications.MSignal;
 import org.tzi.use.uml.ocl.type.EnumType;
 import org.tzi.use.uml.ocl.type.Type;
+import org.tzi.use.uml.sys.MSystem;
 import org.tzi.use.util.StringUtil;
 
 /**
@@ -39,19 +39,21 @@ import org.tzi.use.util.StringUtil;
  * specification of the UML metamodel.
  *
  * @version     $ProjectVersion: 0.393 $
- * @author      Mark Richters 
+ * @author      Hoang Doan 
  */
 public class MMInstanceGenerator implements MMVisitor {
-    protected PrintWriter fOut;
+    private MSystem fSystem;
+    private LinkedList<String> soilCommands = new LinkedList<String>();
     private Set<Type> fDataTypes;
     private boolean fPass1;
-    private String fModelId;
+//    private String fModelId;
 
-    public MMInstanceGenerator(PrintWriter out) {
-        fOut = out;
+    public MMInstanceGenerator(MSystem system) {
+        fSystem = system;
         fDataTypes = new HashSet<Type>();
     }
 
+    
     /**
      * Generates output for creating an instance of a model
      * element. This is common for all model elements.
@@ -59,12 +61,12 @@ public class MMInstanceGenerator implements MMVisitor {
      * @return the name of the new instance 
      */
     private String genInstance(MModelElement e, String metaClass, String prefix) {
-        String eName = e.name();
+    	String eName = e.name();
         String qualifiedName = (( prefix != null ) ? prefix + "_" : "") + eName;
-        fOut.println("-- " + metaClass + " " + qualifiedName);
+//      fOut.println("-- " + metaClass + " " + qualifiedName);
         String id = qualifiedName + metaClass;
-        fOut.println("!create " + id + " : " + metaClass);
-        fOut.println("!set " + id + ".name := '" + eName + "'");
+        soilCommands.add("create " + id + " : " + metaClass);
+        soilCommands.add("set " + id + ".name := '" + eName + "'");
         return id;
     }
 
@@ -73,8 +75,8 @@ public class MMInstanceGenerator implements MMVisitor {
     }
 
     public void visitAssociation(MAssociation e) {
-        String id = genInstance(e, "Association");
-        fOut.println( "!set " + id + ".isDerived := " + e.isDerived());
+    	String id = genInstance(e, "Association");
+        soilCommands.add("set " + id + ".isDerived := " + e.isDerived());
         // visit association ends
         for (MAssociationEnd assocEnd : e.associationEnds()) {
             assocEnd.processWithVisitor(this);
@@ -83,12 +85,11 @@ public class MMInstanceGenerator implements MMVisitor {
     
     //------------------
     public void visitAssociationClass( MAssociationClass e ) {
-
         // prints information about associationclass
         if ( !fPass1 ) {
             String id = genInstance( e, "AssociationClass" );
-            fOut.println( "!set " + id + ".isAbstract = " + e.isAbstract() );
-            fOut.println( "!set " + id + ".isDerived = " + e.isDerived());
+            soilCommands.add("set " + id + ".isAbstract = " + e.isAbstract());
+            soilCommands.add("set " + id + ".isDerived = " + e.isDerived());
         }
 
         // visit attributes
@@ -110,35 +111,42 @@ public class MMInstanceGenerator implements MMVisitor {
     public void visitAssociationEnd(MAssociationEnd e) {
         String id = genInstance(e, "Property", e.association().name());
         boolean isComposite = false;
-        fOut.println( "!set " + id + ".isDerived := " + e.isDerived());
-        fOut.println( "!set " + id + ".isDerivedUnion := " + e.isUnion());
-
-        fOut.print("!set " + id + ".aggregation := #");
+        soilCommands.add("set " + id + ".isDerived := " + e.isDerived());
+        soilCommands.add("set " + id + ".isDerivedUnion := " + e.isUnion());
+        
+        String soilCommand ="";
+        soilCommand = "set " + id + ".aggregation := #";
         switch ( e.aggregationKind() ) {
         case MAggregationKind.NONE:
-            fOut.println("none");
+        	soilCommand = soilCommand + "none";
             break;
         case MAggregationKind.AGGREGATION:
-            fOut.println("aggregate");
+        	soilCommand = soilCommand + "aggregate";
             break;
         case MAggregationKind.COMPOSITION:
-            fOut.println("composite");
+        	soilCommand = soilCommand + "composite";
             isComposite = true;
             break;
         default: 
             throw new Error("Fatal error. Invalid multiplicity kind");            
         }
-        
-        fOut.println( "!set " + id + ".isComposite := " + isComposite );
+        soilCommands.add(soilCommand);
+        soilCommands.add("set " + id + ".isComposite := " + isComposite);
         if(e.multiplicity().getRanges().size()>0)
-        	fOut.println( "!set " + id + ".lower := " + e.multiplicity().getRanges().get(0).getLower());
+        	soilCommands.add("set " + id + ".lower := " + e.multiplicity().getRanges().get(0).getLower());
         if(e.multiplicity().getRanges().size()>0)
-        	fOut.println( "!set " + id + ".upper := " + e.multiplicity().getRanges().get(0).getUpper());
+        	soilCommands.add("set " + id + ".upper := " + e.multiplicity().getRanges().get(0).getUpper());
         
-        // add AssociationEnd_Association link
-        fOut.println("!insert (" + e.association().name() + "Association, " + id + 
+        // add AssociationEnd_Association links
+        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
                      ") into A_Association_Association_Property_MemberEnd");
-        fOut.println();
+        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
+                ") into C_Association_OwningAssociation_Property_OwnedEnd");
+        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
+                ") into A_Association_Association_Property_NavigableOwnedEnd");
+        //add TypedElement(Property)_Type(Class) link
+        soilCommands.add("insert (" + id + "," + e.cls() + "Class" + 
+                ") into A_TypedElement_TypedElement_Type_Type");
     }
 
     public void visitAttribute(MAttribute e) {
@@ -147,16 +155,16 @@ public class MMInstanceGenerator implements MMVisitor {
             return;
         }
         String id = genInstance(e, "Property",e.owner().name());
-        fOut.println( "!set " + id + ".isDerived := " + e.isDerived());
-        fOut.println( "!set " + id + ".isOrdered := false" );
-        fOut.println( "!set " + id + ".isUnique := false" );
-        fOut.println( "!set " + id + ".isDerivedUnion := false" );
-        fOut.println( "!set " + id + ".isReadOnly := false" );
+        soilCommands.add( "set " + id + ".isDerived := " + e.isDerived());
+        soilCommands.add( "set " + id + ".isOrdered := false" );
+        soilCommands.add( "set " + id + ".isUnique := false" );
+        soilCommands.add( "set " + id + ".isDerivedUnion := false" );
+        soilCommands.add( "set " + id + ".isReadOnly := false" );
         //fOut.println( "!set " + id + ".isID := false" );
 
         
         // add Class_Property link
-        fOut.println("!insert (" + e.owner().name() + "Class, " + 
+        soilCommands.add("insert (" + e.owner().name() + "Class, " + 
                      id + ") into C_Class_Class_Property_OwnedAttribute");
 
         // add Property_Datatype link for type of attribute
@@ -165,20 +173,19 @@ public class MMInstanceGenerator implements MMVisitor {
             s = "DataType";
         else 
             s = "Class";
-        fOut.println("!insert (" + e.type() + s + ", " + id +
+        soilCommands.add("insert (" + e.type() + s + ", " + id +
                      ") into C_DataType_Datatype_Property_OwnedAttribute");
-        fOut.println();
+        
     }
 
     public void visitClass(MClass e) {
         if (! fPass1 ) {
             String id = genInstance(e, "Class");
-            fOut.println("!set " + id + ".isAbstract := " + e.isAbstract());
+            soilCommands.add("set " + id + ".isAbstract := " + e.isAbstract());
 
 /*            // add to model namespace
             fOut.println("!insert (" + fModelId + ", " + id +
                          ") into Namespace_ModelElement");*/
-            fOut.println();
         }
 
         // visit attributes
@@ -193,41 +200,40 @@ public class MMInstanceGenerator implements MMVisitor {
 
     public void visitClassInvariant(MClassInvariant e) {
         String id = genInstance(e, "Constraint", e.cls().name());
-        fOut.println("!set " + id + ".body := '" + 
+        soilCommands.add("set " + id + ".body := '" + 
                      StringUtil.escapeString(e.bodyExpression().toString(), '\'')
                      + "'");
         // connect to ModelElement
-        fOut.println("!insert (" + id + ", " +
+        soilCommands.add("insert (" + id + ", " +
                      e.cls().name() + 
                      "Class) into Constraint_ModelElement");
 //        // add to model namespace
 //        fOut.println("!insert (" + fModelId + ", " + id +
 //                     ") into Namespace_ModelElement");
-        fOut.println();
     }
 
     public void visitGeneralization(MGeneralization e) {
         String id = genInstance(e, "Generalization");
-        fOut.println("!set " + id + ".discriminator := ''");
+        soilCommands.add("set " + id + ".discriminator := ''");
         // connect to child
-        fOut.println("!insert (" + id + ", " +
+        soilCommands.add("insert (" + id + ", " +
                      e.child().name() + 
                      "Class) into Generalization_GeneralizableElement1");
         // connect to parent
-        fOut.println("!insert (" + id + ", " +
+        soilCommands.add("insert (" + id + ", " +
                      e.parent().name() + 
                      "Class) into Generalization_GeneralizableElement2");
 //        // add to model namespace
 //        fOut.println("!insert (" + fModelId + ", " + id +
 //                     ") into Namespace_ModelElement");
-        fOut.println();
+        
     }
 
     public void visitModel(MModel e) {
         // create Model
-        fOut.println("-- UML metamodel instance generated by USE " + 
+        /*fOut.println("-- UML metamodel instance generated by USE " + 
                      Options.RELEASE_VERSION);
-        fOut.println();
+        fOut.println();*/
 
         fPass1 = true;
 
@@ -238,16 +244,15 @@ public class MMInstanceGenerator implements MMVisitor {
         }
 
         // create all DataTypes that are required later
-        fOut.println("-- DataTypes");
+        /*fOut.println("-- DataTypes");*/
         
         for (Type t : fDataTypes) {
             if (e.getClass(t.toString()) == null ) {
                 String id = t.toString() + "DataType";
-                fOut.println("!create " + id + " : DataType");
-                fOut.println("!set " + id + ".name := '" + t.toString() + "'");
+                soilCommands.add("create " + id + " : DataType");
+                soilCommands.add("set " + id + ".name := '" + t.toString() + "'");
             }
         }
-        fOut.println();
 
         fPass1 = false;
         
@@ -281,20 +286,19 @@ public class MMInstanceGenerator implements MMVisitor {
     }
 
     public void visitOperation(MOperation e) {
-        //FIXME: implement --> HoangDK 18.08
-    	
+
         if (fPass1 ) {
             if (e.hasResultType()) fDataTypes.add(e.resultType());
             return;
         }
     	if (!fPass1 ) {
 	        String id = genInstance(e, "Operation", e.cls().name());
-	        fOut.println( "!set " + id + ".isQuery := false");
-	        fOut.println( "!set " + id + ".isOrdered := false" );
-	        fOut.println( "!set " + id + ".isUnique := false" );
+	        soilCommands.add( "set " + id + ".isQuery := false");
+	        soilCommands.add( "set " + id + ".isOrdered := false" );
+	        soilCommands.add( "set " + id + ".isUnique := false" );
 	        
 	        // add Class_Operation link
-	        fOut.println("!insert (" + e.cls().name() + "Class, " + 
+	        soilCommands.add("insert (" + e.cls().name() + "Class, " + 
 	                     id + ") into C_Class_Class_Operation_OwnedOperation");
 
 	        // add Operation_Datatype link for return type of the operation
@@ -310,10 +314,22 @@ public class MMInstanceGenerator implements MMVisitor {
 //		                     ") into C_DataType_Datatype_Operation_OwnedOperation");
 	        }
 	        
-	        fOut.println();
     	}
     }
 
+    public LinkedList<String> getGeneratedShellCommands(){
+    	return soilCommands;
+    }
+    /*public LinkedList<MStatement> getGeneratedStatements(){
+    	LinkedList<MStatement> genStatements = new LinkedList<MStatement>();
+    	for (int i = 0; i < soilCommands.size(); i++)
+    	{
+    		MStatement statement = translateSoilCommandtoStatement(soilCommands.get(i));
+    		if (statement != null) genStatements.add(statement); 
+    	}
+    	return genStatements;
+    }*/
+    
     public void visitPrePostCondition(MPrePostCondition e) {
         //FIXME: implement
     }
