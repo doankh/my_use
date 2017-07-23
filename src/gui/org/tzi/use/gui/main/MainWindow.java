@@ -1873,7 +1873,7 @@ public class MainWindow extends JFrame {
     	private boolean isMetamodel;
     	//private String iconName;
     	ActionViewCreateObjectDiagram(boolean _isMetamodel) {
-            super(!_isMetamodel? "Object diagram": "Meta model Object diagram", getIcon("ObjectDiagram.gif"));
+            super(!_isMetamodel? "Object diagram": "Meta Object diagram", getIcon("ObjectDiagram.gif"));
             isMetamodel = _isMetamodel;
         }
 
@@ -1888,7 +1888,7 @@ public class MainWindow extends JFrame {
         	else
         		system = fSession.system();
             NewObjectDiagramView odv = new NewObjectDiagramView(MainWindow.this, system);
-            ViewFrame f = new ViewFrame("Object diagram", odv, "ObjectDiagram.gif");
+            ViewFrame f = new ViewFrame(!isMetamodel?"Object diagram":"Meta Object Diagram", odv, "ObjectDiagram.gif");
             
             // give some help information
             f.addInternalFrameListener(new InternalFrameAdapter() {

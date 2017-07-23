@@ -23,12 +23,10 @@ package org.tzi.use.gui.views.diagrams.classdiagram;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 
 import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.uml.mm.MAssociation;
 import org.tzi.use.uml.mm.MClass;
-import org.tzi.use.uml.mm.MGeneralization;
 import org.tzi.use.uml.mm.MModel;
 import org.tzi.use.uml.sys.MSystem;
 
@@ -55,13 +53,13 @@ public class MClassDiagramView extends ClassDiagramView{
 	        	classDiagram().showClass(cls);
 	        //Hide the unused associations. Is there a possible method to recognize these associations?
 	        //e.g. No redefined Property --> no A_Property_Property_Property_RedefinedProperty association
-	        classDiagram().hideAssociation(mModel.getAssociation("A_Association_Association_Property_NavigableOwnedEnd"));
+	        /*classDiagram().hideAssociation(mModel.getAssociation("A_Association_Association_Property_NavigableOwnedEnd"));
 	        classDiagram().hideAssociation(mModel.getAssociation("C_Association_OwningAssociation_Property_OwnedEnd"));
 	        classDiagram().hideAssociation(mModel.getAssociation("C_Property_AssociationEnd_Property_Qualifier"));
 	        classDiagram().hideAssociation(mModel.getAssociation("A_Property_Property_Property_Opposite"));
 	        classDiagram().hideAssociation(mModel.getAssociation("A_Property_Property_Property_SubsettedProperty"));
 	        classDiagram().hideAssociation(mModel.getAssociation("A_Property_Property_Property_RedefinedProperty"));
-	        classDiagram().hideAssociation(mModel.getAssociation("A_Operation_Operation_Operation_RedefinedOperation"));
+	        classDiagram().hideAssociation(mModel.getAssociation("A_Operation_Operation_Operation_RedefinedOperation"));*/
 	        
     	}
     }
@@ -73,7 +71,7 @@ public class MClassDiagramView extends ClassDiagramView{
 		MModel mModel = system().model();
 		MModel mmModel = metaSystem().model();
 		relatedMMClasses = new ArrayList<MClass>();
-		relatedMMAssociations = new ArrayList<MAssociation>();
+//		relatedMMAssociations = new ArrayList<MAssociation>();
 		relatedMMClasses.add(mmModel.getClass("Class"));
 		relatedMMClasses.add(mmModel.getClass("DataType"));
 		Collection<MClass> allClasses = mModel.classes();
@@ -83,12 +81,9 @@ public class MClassDiagramView extends ClassDiagramView{
 			if(!cls.attributes().isEmpty())
 			{
 				mCls = mmModel.getClass("Property");
-				mAsso = mmModel.getAssociation("C_Class_Class_Property_OwnedAttribute");
-				if(mCls !=null)
-				{
-					relatedMMClasses.add(mCls);
-					relatedMMAssociations.add(mAsso);
-				}
+//				mAsso = mmModel.getAssociation("C_Class_Class_Property_OwnedAttribute");
+				if(mCls !=null) relatedMMClasses.add(mCls);
+//				if(mAsso!=null)	relatedMMAssociations.add(mAsso);
 				break;
 			}
 		for(MClass cls:allClasses)
@@ -96,6 +91,8 @@ public class MClassDiagramView extends ClassDiagramView{
 			{
 				mCls = mmModel.getClass("Operation");
 				if(mCls !=null) relatedMMClasses.add(mCls);
+				/*mAsso = mmModel.getAssociation("C_Class_Class_Operation_OwnedOperation");
+				if(mAsso!=null) relatedMMAssociations.add(mAsso);*/
 				break;
 			}
 		if(!mModel.associations().isEmpty())
@@ -109,13 +106,13 @@ public class MClassDiagramView extends ClassDiagramView{
 			mCls = mmModel.getClass("AssociationClass");
 			if(mCls !=null) relatedMMClasses.add(mCls);
 		}
-		Iterator<MGeneralization> it = mModel.generalizationGraph().edgeIterator();
+		/*Iterator<MGeneralization> it = mModel.generalizationGraph().edgeIterator();
 		if(it.hasNext())
 		{
 			mCls = mmModel.getClass("Generalization");
 			if(mCls !=null)
 				relatedMMClasses.add(mCls);
-		}
+		}*/
 
     	
     }

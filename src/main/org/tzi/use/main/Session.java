@@ -81,6 +81,10 @@ public class Session {
     public boolean hasSystem() {
         return fSystem != null;
     }
+    
+    public boolean hasMetaSystem() {
+        return fMetaSystem != null;
+    }
 
     public void evaluatedStatement(MStatement statement) {
     	fireEvaluatedStatement(statement);

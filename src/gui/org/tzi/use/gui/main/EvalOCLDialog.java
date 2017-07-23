@@ -33,6 +33,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -64,10 +65,13 @@ import org.tzi.use.util.TeeWriter;
  * 
  * @version $ProjectVersion: 0.393 $
  * @author Mark Richters
+ * @author Khanh-Hoang Doan
  */
 @SuppressWarnings("serial")
 class EvalOCLDialog extends JDialog {
-    private MSystem fSystem;
+    private MSystem fMetaSystem;
+    
+	private MSystem fSystem;
 
     private final JTextArea fTextIn;
 
@@ -92,6 +96,7 @@ class EvalOCLDialog extends JDialog {
     EvalOCLDialog(final Session session, JFrame parent) {
         super(parent, "Evaluate OCL expression");
     	fSystem = getSystem(session);
+    	fMetaSystem = getMetaSystem(session);
         session.addChangeListener(sessionChangeListener);
         
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -130,6 +135,9 @@ class EvalOCLDialog extends JDialog {
         p.add(new JScrollPane(fTextIn), BorderLayout.CENTER);
         textPane.add(p);
         textPane.add(Box.createRigidArea(new Dimension(0, 5)));
+        
+        final JCheckBox ckEvaluateMetaSystem = new JCheckBox("Evaluate on UML meta model instance");
+        textPane.add(ckEvaluateMetaSystem);
 
         p = new JPanel(new BorderLayout());
         p.add(textOutLabel, BorderLayout.NORTH);
@@ -149,7 +157,7 @@ class EvalOCLDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) {
             	if(fEvalBrowser != null && fEvalBrowser.getFrame().isVisible()){
             		// if evaluation browser is already open, update it as well
-            		boolean evalSuccess = evaluate(fTextIn.getText(), true);
+            		boolean evalSuccess = evaluate(fTextIn.getText(), true, ckEvaluateMetaSystem.isSelected());
             		
             		if(evalSuccess){
             			fEvalBrowser.updateEvalBrowser(evaluator
@@ -157,7 +165,7 @@ class EvalOCLDialog extends JDialog {
             		}
             	}
             	else {
-            		evaluate(fTextIn.getText(), false);
+            		evaluate(fTextIn.getText(), false,ckEvaluateMetaSystem.isSelected());
             	}
             }
         });
@@ -169,7 +177,7 @@ class EvalOCLDialog extends JDialog {
             @Override
 			public void actionPerformed(ActionEvent e) {
             	// Error message is printed by evaluate method
-            	boolean evalSuccess = evaluate(fTextIn.getText(), true);
+            	boolean evalSuccess = evaluate(fTextIn.getText(), true,ckEvaluateMetaSystem.isSelected());
                 
                 if(evalSuccess){
                 	if (fEvalBrowser != null && fEvalBrowser.getFrame().isVisible()) {
@@ -256,14 +264,26 @@ class EvalOCLDialog extends JDialog {
 			return new MSystem(model);
 		}
 	}
+	
+	private MSystem getMetaSystem(Session session) {
+		if(session.hasMetaSystem()){
+			return session.metaSystem();
+		}
+		else {
+			MModel model = new ModelFactory().createModel("empty model");
+			return new MSystem(model);
+		}
+	}
 
 	private void closeDialog() {
         setVisible(false);
         dispose();
     }
 
-    private boolean evaluate(String in, boolean evalTree) {
-        if (this.fSystem == null) {
+    private boolean evaluate(String in, boolean evalTree, boolean onMetaModel) {
+        //select the system will be evaluated
+    	MSystem evalSystem = onMetaModel?this.fMetaSystem:fSystem;
+    	if (evalSystem == null) {
         	fTextOut.setText("No system!");
         	return false;
         }
@@ -279,12 +299,12 @@ class EvalOCLDialog extends JDialog {
         
         // compile query
         Expression expr = OCLCompiler.compileExpression(
-        		fSystem.model(),
-        		fSystem.state(),
+        		evalSystem.model(),
+        		evalSystem.state(),
                 in, 
                 "Error", 
                 out, 
-                fSystem.varBindings());
+                evalSystem.varBindings());
         
         
         out.flush();
@@ -319,7 +339,7 @@ class EvalOCLDialog extends JDialog {
         try {
             // evaluate it with current system state
             evaluator = new Evaluator(evalTree);
-            Value val = evaluator.eval(expr, fSystem.state(), fSystem
+            Value val = evaluator.eval(expr, evalSystem.state(), evalSystem
                     .varBindings());
             // print result
             fTextOut.setText(val.toStringWithType());

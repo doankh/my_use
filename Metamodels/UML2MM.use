@@ -1933,14 +1933,14 @@ class Association < Relationship, Classifier
 end
 
 association A_Class_Class_Class_SuperClass between
-  Class[*] role notNavigableSuperClass
+  Class[*] role subClass
   Class[*] role superClass redefines general
 end
 
 -- TODO: Structured Classfier already defines this composition (Class < EncapsulatedClassifier < StructuredClassifier)
 
 composition C_Class_Class_Property_OwnedAttribute between
-  Class[0..1] role _class subsets classifier subsets namespace subsets featuringClassifier
+  Class[0..1] role class subsets classifier subsets namespace subsets featuringClassifier
   Property[*] role ownedAttribute ordered subsets attribute subsets ownedMember subsets feature
 end
 
@@ -1950,7 +1950,7 @@ composition C_Class_Class_Classifier_NestedClassifier between
 end
 
 composition C_Class_Class_Operation_OwnedOperation between
-  Class[0..1] role notNavigableOwnedOperation subsets redefinitionContext subsets namespace subsets featuringClassifier
+  Class[0..1] role class subsets redefinitionContext subsets namespace subsets featuringClassifier
   Operation[*] role ownedOperation subsets feature subsets ownedMember subsets notNavigableRedefinitionContext
 end
 
