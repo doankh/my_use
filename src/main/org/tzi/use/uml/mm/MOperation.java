@@ -23,6 +23,7 @@ package org.tzi.use.uml.mm;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.tzi.use.uml.ocl.expr.ExpUndefined;
 import org.tzi.use.uml.ocl.expr.Expression;
@@ -356,4 +357,19 @@ public final class MOperation extends MModelElementImpl implements UseFileLocata
 	public String toString() {
 		return qualifiedName();
 	}
+	
+	//get the operation that has been redefined by this operation
+	public MOperation getRedefinedOperation()
+	{	
+		MClass cls = this.cls();
+		Set<MClass> allParentCls =  (Set<MClass>) cls.allParents();
+		for (MClass mClass : allParentCls) {
+			List<MOperation> listOfOperation = mClass.allOperations();
+			for (MOperation mOp : listOfOperation) {
+				if(this.isValidOverrideOf(mOp)) return mOp;
+			}
+		}
+		return null;
+	}
+	
 }

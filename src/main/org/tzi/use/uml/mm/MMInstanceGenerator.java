@@ -173,19 +173,28 @@ public class MMInstanceGenerator implements MMVisitor {
             s = "DataType";
         else 
             s = "Class";
-        soilCommands.add("insert (" + e.type() + s + ", " + id +
-                     ") into C_DataType_Datatype_Property_OwnedAttribute");
-        
+        /*soilCommands.add("insert (" + e.type() + s + ", " + id +
+                     ") into C_DataType_Datatype_Property_OwnedAttribute");*/
+        soilCommands.add("insert (" + id +  ", " + e.type() + s +
+                ") into A_TypedElement_TypedElement_Type_Type");
     }
 
     public void visitClass(MClass e) {
-        if (! fPass1 ) {
+        //Generate class instances first and attributes and operations later, because a class might be
+    	//the type of an attribute or the return type of an operation
+    	if (fPass1 ) {
             String id = genInstance(e, "Class");
+            
             soilCommands.add("set " + id + ".isAbstract := " + e.isAbstract());
-
+            //generate a corresponding metrics object
+            String id1 = id + "Metrics";
+            soilCommands.add("create " + id1 + " : " + "ClassMetrics");
+            //add A_ClassMetrics_metrics_Class_class assocition between Class and ClassMetrics
+            soilCommands.add("insert (" + id + "," + id1 + ") into A_ClassMetrics_metrics_Class_class");
 /*            // add to model namespace
             fOut.println("!insert (" + fModelId + ", " + id +
                          ") into Namespace_ModelElement");*/
+            
         }
 
         // visit attributes
@@ -213,11 +222,18 @@ public class MMInstanceGenerator implements MMVisitor {
     }
 
     public void visitGeneralization(MGeneralization e) {
-        //String id = genInstance(e, "Generalization");
-        
+    	
+		String id = e.name();
+	    soilCommands.add("create " + id + " : " + "Generalization");
+       //add A_Classifier_General_Generalization_Generalization between the general class and the generalization instance
+	    soilCommands.add("insert ("+ e.parent().name() + "Class" + "," + id +") into A_Classifier_General_Generalization_Generalization");
+       //add C_Classifier_Specific_Generalization_Generalization between the subclass and the generalization instance 
+	    soilCommands.add("insert ("+ e.child().name() + "Class" + "," + id +") into C_Classifier_Specific_Generalization_Generalization");
+       
         // add A_Class_Class_Class_SuperClass association between superclass and subclass
         soilCommands.add("insert (" + e.child().name() + "Class, " +
-                     e.parent().name() + "Class) into A_Class_Class_Class_SuperClass");   
+                     e.parent().name() + "Class) into A_Class_Class_Class_SuperClass");
+        
     }
 
     public void visitModel(MModel e) {
@@ -277,7 +293,7 @@ public class MMInstanceGenerator implements MMVisitor {
     }
 
     public void visitOperation(MOperation e) {
-
+    	
         if (fPass1 ) {
             if (e.hasResultType()) fDataTypes.add(e.resultType());
             return;
@@ -304,7 +320,14 @@ public class MMInstanceGenerator implements MMVisitor {
 		        soilCommands.add("insert (" + e.resultType() + s + ", " + id +
 		                     ") into C_DataType_Datatype_Operation_OwnedOperation");
 	        }
-	        
+	        //if the operation redefine another operation from a super class
+//	        if(e.getRedefinedOperation() != null)
+//	        {
+//	        	MOperation mOp = e.getRedefinedOperation();
+//	        	soilCommands.add("insert (" + id + "," + mOp.cls().name() + "_" + mOp.name() + "Operation" 
+//	                      + ") into A_Operation_Operation_Operation_RedefinedOperation");
+//	        }
+	        	
     	}
     }
 

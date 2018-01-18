@@ -680,7 +680,7 @@ composition C_MultiplicityElement_OwningLower_ValueSpecification_LowerValue betw
 end
 
 association A_TypedElement_TypedElement_Type_Type between
-  TypedElement[*] role typepElement
+  TypedElement[*] role typeElement
   Type[0..1] role type
 end
 
@@ -2010,10 +2010,9 @@ end
   UML 2.3 p. 39:
   [3] endType is derived from the types of the member ends.
 */
---HoangDK: 18.01.2018
 association A_Association_Association_Type_EndType between
   Type[1..*] role endType ordered subsets relatedElement derived = self.memberEnd->collect(e | e.type)->asOrderedSet()
-  Association[*] role association subsets relationship -- Not marked in Spec                    was missing!
+  Association[*] role notNavigableEndType subsets relationship -- Not marked in Spec                    was missing!
 end
 --------------------------------------------------------------------------------------------------------
 -- End Figure 7.12
@@ -2755,7 +2754,6 @@ association A_ConnectorEnd_ConnectorEnd_Property_PartWithPort between
   Property[0..1] role portWithPart
 end
 
-
 --------------------------------------------------------------------------------------------------------
 -- End Figure 9.4
 --------------------------------------------------------------------------------------------------------
@@ -2819,65 +2817,3 @@ end
 --------------------------------------------------------------------------------------------------------
 -- End Figure x.xx
 --------------------------------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------------------------------
---HoangDK - class for metrics calculation in the context of a class
---------------------------------------------------------------------------------------------------------
-class ClassMetrics
-operations
-	---------------------1. Complexity metrics-----------------
-	-----------------------------------------------------------
-    --Number of Attributes
-	NOA(): Integer = 
-		self.class.ownedAttribute->size()
-		
-	--Number of methods defined in a class (includes overridden methods)
-	NOM(): Integer =
-		self.class.ownedOperation->size()
-		
-	--Number of direct children
-	NOC(): Integer =
-		self.class.allGeneralizations.specific->size()
-		
-	--The Depth of Inheritance. Fix me: the multi inheritance
-	DIT(): Integer = 
-		self.class.generalization.general->closure(generalization.general)->size()
-		
-	SIZE2(): Integer = 
-		NOA() + NOM()
-		
-	--Number of non-redefined inherited operations
-	NMI(): Integer = 
-		self.class.inheritedMember->select(m|m.oclIsTypeOf(Operation))
-			->select(op|not self.class.ownedOperation.name->includes(op.name))->size()
-	
-	--Number of Methods Overridden
-	NMO(): Integer = 
-		self.class.inheritedMember->select(m|m.oclIsTypeOf(Operation))
-			->select(op|self.class.ownedOperation.name->includes(op.name))->size()
-	--The Specialization Index metric
-	SIX(): Real = 
-		(NMO()*DIT())/(NOM()+NMI())
-		
-	--------------------2. Coupling metrics-------------------
-	----------------------------------------------------------
-	--Data Abstraction Coupling: number of attributes that have another class as their type (not including inheritance)
-	DAC(): Integer =
-		self.class.ownedAttribute->select(att|att.type.oclIsTypeOf(Class))->size()
-	
-	--Data Abstraction Coupling 1: number of different classes that are used as types of attributes in a class (not  including inheritance)
-	DAC1(): Integer = 
-		self.class.ownedAttribute->select(att|att.type.oclIsTypeOf(Class))->collect(type)->asSet()->size()
-	
-	--Number of Association
-	NAS(): Integer =
-		self.class.association->size()
-		
-	
-end
-
-association A_ClassMetrics_metrics_Class_class between
-	Class[1] role class
-	ClassMetrics[1] role metrics 
-end

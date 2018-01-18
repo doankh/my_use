@@ -372,6 +372,23 @@ public class ClassDiagram extends DiagramView
     	}
     }
     
+    public void hideClass(String clsName)
+    {
+    	MClass cls = null;
+    	cls = this.fParent.system().model().getClass(clsName);
+    	if(cls != null) hideClass(cls);
+    }
+    /**
+     * Shows an already hidden class again by name
+     * @param clsName
+     */
+    public void showClass(String clsName)
+    {
+    	MClass cls = null;
+    	cls = this.fParent.system().model().getClass(clsName);
+    	if(cls != null) showClass(cls);
+    }
+    
     /**
      * Shows an already hidden class again
      * @param cls
@@ -513,6 +530,13 @@ public class ClassDiagram extends DiagramView
 			showClass((MClass) assoc);
 		}
 	}
+    public void shoAssociation(String assocName)
+    {
+    	MAssociation assoc = null;
+    	assoc = this.fParent.system().model().getAssociation(assocName);
+    	if(assoc != null) showAssociation(assoc);
+    }
+    
     
     /**
      * Hides an association in the diagram.
@@ -527,6 +551,13 @@ public class ClassDiagram extends DiagramView
     	if (assoc instanceof MAssociationClass) { 
     		hideClass((MClass)assoc);
     	}
+    }
+    
+    public void hideAssociation(String assocName)
+    {
+    	MAssociation assoc = null;
+    	assoc = this.fParent.system().model().getAssociation(assocName);
+    	if(assoc != null) hideAssociation(assoc);
     }
     
     protected void addBinaryAssociation(MAssociation assoc) {
