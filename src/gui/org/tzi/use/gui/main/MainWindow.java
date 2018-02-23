@@ -99,6 +99,7 @@ import org.tzi.use.gui.views.ClassExtentView;
 import org.tzi.use.gui.views.ClassInvariantView;
 import org.tzi.use.gui.views.CommandView;
 import org.tzi.use.gui.views.LinkCountView;
+import org.tzi.use.gui.views.ModelMetricsEvaluation;
 import org.tzi.use.gui.views.ObjectCountView;
 import org.tzi.use.gui.views.ObjectPropertiesView;
 import org.tzi.use.gui.views.PrintableView;
@@ -284,10 +285,7 @@ public class MainWindow extends JFrame {
                 "Create command list view");
         // addToToolBar(toolBar, fActionViewCreateStateTree, "Create state tree
         // view");
-		//for Metamodel class diagram
-		//addToToolBar(fToolBar, fActionViewCreateMClassDiagram,
-        //        "Create metamodel class diagram view");
-        // create the menubar
+
 		fMenuBar = new JMenuBar();
 		getRootPane().setJMenuBar(fMenuBar);
 
@@ -462,6 +460,8 @@ public class MainWindow extends JFrame {
         mi = menu.add(fActionViewCreateSimplifiedMClassDiagram);
         
         mi = menu.add(fActionGenerateMetamodelObjectDiagram);
+        
+        mi = menu.add(fActionMetricsEvaluation);
 
         // create the browser panel
 		fModelBrowser = new ModelBrowser(this, fPluginRuntime);
@@ -1064,6 +1064,10 @@ public class MainWindow extends JFrame {
     
     //metamodel object diagram
     private final ActionViewCreateObjectDiagram fActionGenerateMetamodelObjectDiagram = new ActionViewCreateObjectDiagram(true);
+    
+    private final ActionMetricsEvaluation fActionMetricsEvaluation = new ActionMetricsEvaluation();
+    
+  //**End: Meta model menu
 
     private final StateMachineDropdown fStateMachineDropdown = new StateMachineDropdown();
     
@@ -1645,6 +1649,22 @@ public class MainWindow extends JFrame {
         }
     }
 
+    private class ActionMetricsEvaluation extends AbstractAction {
+    	ActionMetricsEvaluation() {
+            super("Model Metrics Evaluation", getIcon("OCL.gif"));
+        }
+
+        @Override
+		public void actionPerformed(ActionEvent e) {
+            ModelMetricsEvaluation civ = new ModelMetricsEvaluation(MainWindow.this, fSession.metaSystem());
+            ViewFrame f = new ViewFrame("Model Metrics Evaluation", civ, "InvariantView.gif");
+            JComponent c = (JComponent) f.getContentPane();
+            c.setLayout(new BorderLayout());
+            c.add(civ, BorderLayout.CENTER);
+            addNewViewFrame(f);
+        }
+    }
+    
     /**
      * Checks structure of system state.
      */

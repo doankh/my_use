@@ -2826,58 +2826,121 @@ end
 --------------------------------------------------------------------------------------------------------
 class ClassMetrics
 operations
-	---------------------1. Complexity metrics-----------------
+	-------------------0. Auxiliary operations--------------
 	-----------------------------------------------------------
-    --Number of Attributes
+	--returns the set of all inherited members of the context class which has the type of operation.
+	inheritedOperations(): Set(NamedElement) =
+		self.class.inheritedMember->select(m|m.oclIsTypeOf(Operation))
+	
+	--return the set of attributes that have another class as their type (not including inheritance)
+	userdefinedTypeAttributes(): OrderedSet(Property) = 
+		self.class.ownedAttribute->select(att|att.type.oclIsTypeOf(Class))
+		
+	--return all ancestors of the corresponding class
+	allAncestors() : Set(Classifier) = 
+		self.class.generalization.general->closure(generalization.general)
+	
+	--return the set of immediate descendents of the corresponding class	
+	children() : Bag(Classifier) = 
+		self.class.generalization.specific
+	
+	--return the set of immediate ancestors of the corresponding class	
+	parents() : Bag(Classifier) = 
+		self.class.generalization.general
+	
+	---------------------1. Size metrics----------------------
+	-----------------------------------------------------------
+	--1.1. Number of Attributes
 	NOA(): Integer = 
 		self.class.ownedAttribute->size()
 		
-	--Number of methods defined in a class (includes overridden methods)
+	--Number of methods defined in a class (NOM) (includes overridden methods)
 	NOM(): Integer =
 		self.class.ownedOperation->size()
-		
-	--Number of direct children
-	NOC(): Integer =
-		self.class.allGeneralizations.specific->size()
-		
-	--The Depth of Inheritance. Fix me: the multi inheritance
-	DIT(): Integer = 
-		self.class.generalization.general->closure(generalization.general)->size()
-		
+	
+	--1.3. Response for a Class (RFC)
+	
+	--1.4. 
 	SIZE2(): Integer = 
 		NOA() + NOM()
 		
-	--Number of non-redefined inherited operations
-	NMI(): Integer = 
-		self.class.inheritedMember->select(m|m.oclIsTypeOf(Operation))
-			->select(op|not self.class.ownedOperation.name->includes(op.name))->size()
+		
+	---------------------2. Complexity metrics----------------------
+	----------------------------------------------------------------
+	--2.1. Number of direct children (NOC)
+	NOC(): Integer =
+		children()->size()
 	
-	--Number of Methods Overridden
-	NMO(): Integer = 
-		self.class.inheritedMember->select(m|m.oclIsTypeOf(Operation))
-			->select(op|self.class.ownedOperation.name->includes(op.name))->size()
-	--The Specialization Index metric
+	--2.2. Depth of Inheritance (DIT). Fix me: the multi inheritance
+	DIT(): Integer = 
+		self.class.generalization.general->closure(generalization.general)->size()
+	
+	--2.3. The Specialization Index metric
 	SIX(): Real = 
 		(NMO()*DIT())/(NOM()+NMI())
+	
+	---------------------3. OO features metrics----------------------
+	-----------------------------------------------------------------
+			
+	--3.1. Number of non-redefined inherited operations (NMI)
+	NMI(): Integer = 
+		inheritedOperations()->select(op|not self.class.ownedOperation.name->includes(op.name))->size()
+	
+	--3.2. Number of Methods Overridden (NMO)
+	NMO(): Integer = 
+		inheritedOperations()->select(op|self.class.ownedOperation.name->includes(op.name))->size()
+	
 		
-	--------------------2. Coupling metrics-------------------
+	--------------------4. Coupling metrics-------------------
 	----------------------------------------------------------
-	--Data Abstraction Coupling: number of attributes that have another class as their type (not including inheritance)
+	--4.1. Data Abstraction Coupling (DAC): number of attributes that have another class as their type (not including inheritance)
 	DAC(): Integer =
-		self.class.ownedAttribute->select(att|att.type.oclIsTypeOf(Class))->size()
+		userdefinedTypeAttributes()->size()
 	
-	--Data Abstraction Coupling 1: number of different classes that are used as types of attributes in a class (not  including inheritance)
+	--4.2. Data Abstraction Coupling 1 (DAC'): number of different classes that are used as types of attributes in a class (not  including inheritance)
 	DAC1(): Integer = 
-		self.class.ownedAttribute->select(att|att.type.oclIsTypeOf(Class))->collect(type)->asSet()->size()
+		userdefinedTypeAttributes()->collect(type)->asSet()->size()
 	
-	--Number of Association
+	--4.3. Number of Association, including the inherited association (NAS)
 	NAS(): Integer =
-		self.class.association->size()
+		self.class.association->size() + allAncestors().collect(association)->size()
 		
+	--4.4. Coupling Between Object (CBO)
+	
+	--4.5. Direct Class Coupling (DCC)
 	
 end
 
 association A_ClassMetrics_metrics_Class_class between
 	Class[1] role class
 	ClassMetrics[1] role metrics 
+end
+
+
+class ModelMetrics
+operations
+	---------------------1. Size metrics----------------------
+	-----------------------------------------------------------
+	--1.1. Total number of classes in the design (DSC)
+	DSC(): Integer = 
+		Class.allInstances()->size()
+	--1.2. Number of total Associations (NAssoc)
+	NAssoc(): Integer = 
+		Association.allInstances()-> size()
+	
+	---------------------1. Complexity metrics----------------------
+	-----------------------------------------------------------
+	--2.1. Number of hierarchies (NOH)
+	
+	--2.2. Maximum Depth of Inheritance (MaxDIT)
+	
+
+	---------------------3. OO features metrics----------------------
+	-----------------------------------------------------------------
+	--3.3. Attribute inheritance factor (AIF)
+	
+	--3.4. Method inheritance factor (MIF)
+	MIF(): Real = 
+		(Class.allInstances()->collect(c|c.metrics.NMI())->sum())/
+		(Class.allInstances()->collect(c|c.metrics.NMI()+c.metrics.NOM())->sum())
 end
