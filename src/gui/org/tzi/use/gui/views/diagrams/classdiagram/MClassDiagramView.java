@@ -65,8 +65,9 @@ public class MClassDiagramView extends ClassDiagramView{
 	        for (String str : modelElements)
         	{
 	        	metaClassName = relatedMetaClasses.get(str);
-	        	for(String className : metaClassName)
-	        		if(mModel.getClass(className) != null) classDiagram().showClass(mModel.getClass(className));
+	        	if(metaClassName != null)
+	        		for(String className : metaClassName)
+	        			if(mModel.getClass(className) != null) classDiagram().showClass(mModel.getClass(className));
         	}
 	        
 	        //Hide associations that are not related 
@@ -76,8 +77,9 @@ public class MClassDiagramView extends ClassDiagramView{
 	        	if (!modelElements.contains(str))
 	        	{
 	        		metaAssociationNames = relatedMetaAssociations.get(str);
-	        		for (String assocName : metaAssociationNames)
-	        			if(mModel.getAssociation(assocName) != null) classDiagram().hideAssociation(mModel.getAssociation(assocName));
+	        		if(metaAssociationNames != null)
+	        			for (String assocName : metaAssociationNames)
+	        				if(mModel.getAssociation(assocName) != null) classDiagram().hideAssociation(mModel.getAssociation(assocName));
 	        	}
 	        }
 	        //Hide unused associations
@@ -101,13 +103,13 @@ public class MClassDiagramView extends ClassDiagramView{
     	//End of meta classes mapping
     	
     	relatedMetaAssociations.put("Attribute", new HashSet<String>(Arrays.asList("C_Class_Class_Property_OwnedAttribute",
-    			"C_DataType_Datatype_Property_OwnedAttribute")));
+    			"A_TypedElement_TypedElement_Type_Type")));
     	relatedMetaAssociations.put("Association", new HashSet<String>(Arrays.asList("A_Association_Association_Type_EndType")));
     	relatedMetaAssociations.put("AssociationEnd", new HashSet<String>(Arrays.asList("A_Association_Association_Property_MemberEnd",
     			"C_Association_OwningAssociation_Property_OwnedEnd","A_Association_Association_Property_NavigableOwnedEnd")));
     	relatedMetaAssociations.put("Operation", new HashSet<String>(Arrays.asList("C_Class_Class_Operation_OwnedOperation",
-    			"C_DataType_Datatype_Operation_OwnedOperation")));
-    	relatedMetaAssociations.put("Parameter", new HashSet<String>(Arrays.asList("C_Operation_Operation_Parameter_OwnedParameter"))); 	
+    			"A_TypedElement_TypedElement_Type_Type")));
+    	relatedMetaAssociations.put("Parameter", new HashSet<String>(Arrays.asList("C_Operation_Operation_Parameter_OwnedParameter", "A_TypedElement_TypedElement_Type_Type"))); 	
     	relatedMetaAssociations.put("Generalization", new HashSet<String>(Arrays.asList("A_Class_Class_Class_SuperClass",
     			"C_Classifier_Specific_Generalization_Generalization","A_Classifier_General_Generalization_Generalization")));
     	relatedMetaAssociations.put("Redefined Attribute", new HashSet<String>(Arrays.asList("A_Property_Property_Property_RedefinedProperty")));

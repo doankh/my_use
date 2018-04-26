@@ -587,4 +587,10 @@ public class MMPrintVisitor implements MMVisitor {
 		indent();
 		println(ws() + other("};"));
 	}
+
+	@Override
+	public void visitParameter(MParameter mParameter) {
+		// TODO Auto-generated method stub
+		
+	}
 }

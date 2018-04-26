@@ -25,15 +25,20 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -41,8 +46,11 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
+import org.tzi.use.config.Options;
 import org.tzi.use.gui.main.MainWindow;
+import org.tzi.use.gui.util.ExtFileFilter;
 import org.tzi.use.parser.ocl.OCLCompiler;
+import org.tzi.use.uml.mm.MMetricEvaluationSetting;
 import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
@@ -56,6 +64,7 @@ import org.tzi.use.uml.sys.MSystem;
  */
 public class ModelMetricsEvaluation extends JPanel implements View{
 	
+	private MSystem mSystem;
 	private Evaluator evaluator;
 	private JTable tblMetricsEvaluation;
 	MetricsEvaluationTableModel tableModel = new MetricsEvaluationTableModel();
@@ -64,7 +73,9 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 	 * Create the panel.
 	 */
 	
-	public ModelMetricsEvaluation(final MainWindow parent, MSystem metaSystem) {
+	public ModelMetricsEvaluation(final MainWindow parent, final MSystem metaSystem) {
+		
+		mSystem = metaSystem;
 		setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 		
 		JButton btnLoadConfigFile = new JButton("Load the Setting");
@@ -74,18 +85,31 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 				try{
 					String readLine = null;
 					String evaluationInv = "";
-					
-					
-					File confFile = new File("E:\\test.txt");
+					//Open the file browser dialog
+					JFileChooser fChooser = new JFileChooser(Options.getLastDirectory().toFile());
+		            ExtFileFilter filter = new ExtFileFilter("met", "Metrics configuration");
+		            fChooser.setFileFilter(filter);
+		            fChooser.setDialogTitle("Open the metric configuration file ...");
+		            		            
+		            int returnVal = fChooser.showOpenDialog(ModelMetricsEvaluation.this);
+		            if (returnVal != JFileChooser.APPROVE_OPTION)
+		                return;
+
+		            Path path = fChooser.getCurrentDirectory().toPath();
+		            Options.setLastDirectory(path);
+		            Path f = fChooser.getSelectedFile().toPath();
+		            File confFile = new File(f.toAbsolutePath().toString());
+		            
+					//File confFile = new File("E:\\test.txt");
 					FileReader reader = new FileReader(confFile);
 					@SuppressWarnings("resource")
 					BufferedReader bufReader = new BufferedReader(reader);
 					
-					List<MetricEvaluation> configList = new ArrayList<MetricEvaluation>();
+					List<MMetricEvaluationSetting> configList = new ArrayList<MMetricEvaluationSetting>();
 					while((readLine = bufReader.readLine()) != null)
 					{
 						String[] data = readLine.split("\\s+");
-						MetricEvaluation config = new MetricEvaluation();
+						MMetricEvaluationSetting config = new MMetricEvaluationSetting();
 						config.setScope(data[0].trim().equals("0")?"Class":"Model");
 						config.setName(data[1]);
 						try{
@@ -96,8 +120,9 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 						{
 							
 						}
-						evaluationInv = generateEvaluationInvariant(config);
-						String errFilename = "E:\\err.txt";
+						evaluationInv = config.createEvaluationInvariant();
+						String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
+								
 						PrintWriter out = new PrintWriter(errFilename);
 
 				        
@@ -133,6 +158,21 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 		tblMetricsEvaluation = new JTable();
 		
 		tblMetricsEvaluation.setModel(tableModel);
+		
+		tblMetricsEvaluation.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int row = tblMetricsEvaluation.getSelectedRow();
+				String value = tblMetricsEvaluation.getModel().getValueAt(row, 4).toString();
+				String scope = tblMetricsEvaluation.getModel().getValueAt(row, 0).toString();
+				if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2 && row >= 0 && scope.equals("Class") && value.equals("false")){
+					MetricEvaluationDetailedView dlg = 
+							new MetricEvaluationDetailedView(mSystem, parent, tableModel.getDataItem(row));
+		            dlg.setVisible(true);
+				}
+			}
+		});
+		
 		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
 		for(int i=0;i<tblMetricsEvaluation.getColumnCount();i++)
@@ -142,33 +182,13 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 		JScrollPane scrollPane = new JScrollPane(tblMetricsEvaluation, 
                                         JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                                         JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		scrollPane.setPreferredSize(new Dimension(400, 300));
+		scrollPane.setPreferredSize(new Dimension(350, 200));
 		add(scrollPane);
 
 		add(btnLoadConfigFile);
 
 	}
-	private String generateEvaluationInvariant(MetricEvaluation config)
-	{
-		String inv = "";
-		String con =""; //condition for every class
-		String tmp;
-		if(config.getScope()=="Class") //if the setting is for class scope metric
-		{
-			inv = "Class.allInstances()->forAll(c|";
-			tmp =  "c.metrics." + config.getName() + "()";
-			con = (config.getMinValue()==-1 && config.getMaxValue()==-1)?"1=1":config.getMinValue()==-1?tmp + "<=" + config.getMaxValue():
-				config.getMaxValue()==-1?tmp + ">=" + config.getMinValue(): tmp + ">=" + config.getMinValue() + " and " + tmp + "<=" + config.getMaxValue();
-			inv += con +")";
-		}
-		else //if the setting is for model scope metric
-		{
-			tmp = "ModelMetrics." + config.getName() + "()";
-			inv = (config.getMinValue()==-1 && config.getMaxValue()==-1)?"1=1":config.getMinValue()==-1?tmp + "<=" + config.getMaxValue():
-				config.getMaxValue()==-1?tmp + ">=" + config.getMinValue(): tmp + ">=" + config.getMinValue() + " and " + tmp + "<=" + config.getMaxValue();
-		}
-		return inv;
-	}
+	
 	@Override
 	public void detachModel() {
 		// TODO Auto-generated method stub
@@ -176,86 +196,22 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 	}
 }
 	
-class MetricEvaluation{
-	private String scope; //Class or Model
-	private String name;
-	private Double minValue; //-1 if no minimum value
-	private Double maxValue;//-1 if no maximum value
-	private Boolean satisfaction;
-	
-	/**
-	 * @return the scope
-	 */
-	public String getScope() {
-		return scope;
-	}
-	/**
-	 * @param scope the scope to set
-	 */
-	public void setScope(String scope) {
-		this.scope = scope;
-	}
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
-	/**
-	 * @param name the name to set
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
-	/**
-	 * @return the minValue
-	 */
-	public Double getMinValue() {
-		return minValue;
-	}
-	/**
-	 * @param minValue the minValue to set
-	 */
-	public void setMinValue(Double minValue) {
-		this.minValue = minValue;
-	}
-	/**
-	 * @return the maxValue
-	 */
-	public Double getMaxValue() {
-		return maxValue;
-	}
-	/**
-	 * @param maxValue the maxValue to set
-	 */
-	public void setMaxValue(Double maxValue) {
-		this.maxValue = maxValue;
-	}
-	/**
-	 * @return the satisfaction
-	 */
-	public Boolean getSatisfaction() {
-		return satisfaction;
-	}
-	/**
-	 * @param satisfaction the satisfaction to set
-	 */
-	public void setSatisfaction(Boolean satisfaction) {
-		this.satisfaction = satisfaction;
-	}
-}
 /*
  * The Table model for metrics evaluation
  */
 @SuppressWarnings("serial")
 class MetricsEvaluationTableModel extends AbstractTableModel {
-    private List<MetricEvaluation> list = new ArrayList<MetricEvaluation>();
+    private List<MMetricEvaluationSetting> list = new ArrayList<MMetricEvaluationSetting>();
 	private final String[] columnNames = { "Scope", "Metric", "Min Value", "Max Value", "Satisfied" };
-    private final int[] columnWidths =   {  100,         100,       50,         50,          100};
+    private final int[] columnWidths =   {  80,         80,       50,         50,          80};
 
-    public void setList(List<MetricEvaluation> data) {
+    public void setList(List<MMetricEvaluationSetting> data) {
         this.list = data;
         fireTableDataChanged();
+    }
+    
+    public MMetricEvaluationSetting getDataItem(int row){
+    	return list.get(row);
     }
     
     @Override

@@ -26,6 +26,9 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Paths;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -33,12 +36,18 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
+import org.tzi.use.gui.main.MainWindow;
+import org.tzi.use.parser.ocl.OCLCompiler;
+import org.tzi.use.uml.mm.MMetricEvaluationSetting;
+import org.tzi.use.uml.ocl.expr.Evaluator;
+import org.tzi.use.uml.ocl.expr.Expression;
+import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
+import org.tzi.use.uml.ocl.value.Value;
 import org.tzi.use.uml.sys.MSystem;
 
 /**
@@ -49,6 +58,8 @@ import org.tzi.use.uml.sys.MSystem;
 @SuppressWarnings("serial")
 class MetricEvaluationDetailedView extends JDialog {
 
+	private Evaluator evaluator;
+	
 	private final JPanel contentPanel = new JPanel();
 	
 	private final JTextArea fTextIn;
@@ -60,8 +71,8 @@ class MetricEvaluationDetailedView extends JDialog {
 	/**
 	 * Create the dialog.
 	 */
-	MetricEvaluationDetailedView(final MSystem system, JFrame parent) {
-		super(parent, "Further Inspectation of Metric Evaluation");
+	MetricEvaluationDetailedView(final MSystem metaSystem, final MainWindow parent, MMetricEvaluationSetting config) {
+		super(parent, "Metric evaluation detail");
 		
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		
@@ -71,6 +82,7 @@ class MetricEvaluationDetailedView extends JDialog {
         // create text components and labels
         fTextIn = new JTextArea();
         fTextIn.setEditable(false);
+        fTextIn.setText(config.toString());
         fTextIn.setFont(evalFont);
         JLabel textInLabel = new JLabel("Metric evaluation:");
         textInLabel.setDisplayedMnemonic('O');
@@ -80,6 +92,36 @@ class MetricEvaluationDetailedView extends JDialog {
         fTextOut.setEditable(false);
         fTextOut.setLineWrap(true);
         fTextOut.setFont(evalFont);
+        
+        try
+        {
+	        //Evaluate the auto generated meta-query and show result in fTextOut
+	        String evaluationInv = config.createSelectQuery();
+			String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
+					
+			PrintWriter out = new PrintWriter(errFilename);
+	
+	        
+	        // compile invariant
+	        Expression expr = OCLCompiler.compileExpression(
+	        		metaSystem.model(),
+	        		metaSystem.state(),
+	        		evaluationInv, 
+	                "Error", 
+	                out, 
+	                metaSystem.varBindings());
+	        	        
+	        out.flush();
+	        
+	        try {
+	            // evaluate it with current system state
+	            evaluator = new Evaluator(true);
+	            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
+	            // print result
+	            fTextOut.setText(val.toStringWithType());
+	        } catch (MultiplicityViolationException e) {
+	        } 
+        } catch(IOException ex){}
         
         JLabel textOutLabel = new JLabel("Violating Classes:");
         textOutLabel.setLabelFor(fTextOut);

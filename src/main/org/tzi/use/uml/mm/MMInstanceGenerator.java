@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import org.tzi.use.uml.mm.commonbehavior.communications.MSignal;
+import org.tzi.use.uml.ocl.expr.VarDecl;
+import org.tzi.use.uml.ocl.expr.VarDeclList;
 import org.tzi.use.uml.ocl.type.EnumType;
 import org.tzi.use.uml.ocl.type.Type;
 import org.tzi.use.uml.sys.MSystem;
@@ -162,7 +164,6 @@ public class MMInstanceGenerator implements MMVisitor {
         soilCommands.add( "set " + id + ".isReadOnly := false" );
         //fOut.println( "!set " + id + ".isID := false" );
 
-        
         // add Class_Property link
         soilCommands.add("insert (" + e.owner().name() + "Class, " + 
                      id + ") into C_Class_Class_Property_OwnedAttribute");
@@ -173,8 +174,6 @@ public class MMInstanceGenerator implements MMVisitor {
             s = "DataType";
         else 
             s = "Class";
-        /*soilCommands.add("insert (" + e.type() + s + ", " + id +
-                     ") into C_DataType_Datatype_Property_OwnedAttribute");*/
         soilCommands.add("insert (" + id +  ", " + e.type() + s +
                 ") into A_TypedElement_TypedElement_Type_Type");
     }
@@ -294,9 +293,16 @@ public class MMInstanceGenerator implements MMVisitor {
     }
 
     public void visitOperation(MOperation e) {
-    	
+    	VarDeclList paras =  e.paramList();
+    	//if the operation has a return type -> add the return type to the list of Datatype first
         if (fPass1 ) {
             if (e.hasResultType()) fDataTypes.add(e.resultType());
+            //visit list of parameters for the first time to get the datatype of parameters     
+	        for (VarDecl dec : paras)
+	        {
+	        	MParameter para = new MParameter(dec, e);
+	        	para.processWithVisitor(this);
+	        }
             return;
         }
     	if (!fPass1 ) {
@@ -318,8 +324,14 @@ public class MMInstanceGenerator implements MMVisitor {
 		        //FIXME: no association when the resultType of a operation is a class 
 		        else 
 		            s = "Class";
-		        soilCommands.add("insert (" + e.resultType() + s + ", " + id +
-		                     ") into C_DataType_Datatype_Operation_OwnedOperation");
+		        soilCommands.add("insert (" + id +  ", " + e.resultType() + s +
+		                ") into A_Operation_Operation_Type_Type");
+	        }
+	        //visit list of parameters	        
+	        for (VarDecl dec : paras)
+	        {
+	        	MParameter para = new MParameter(dec, e);
+	        	para.processWithVisitor(this);
 	        }
 	        //if the operation redefine another operation from a super class
 //	        if(e.getRedefinedOperation() != null)
@@ -335,15 +347,29 @@ public class MMInstanceGenerator implements MMVisitor {
     public LinkedList<String> getGeneratedShellCommands(){
     	return soilCommands;
     }
-    /*public LinkedList<MStatement> getGeneratedStatements(){
-    	LinkedList<MStatement> genStatements = new LinkedList<MStatement>();
-    	for (int i = 0; i < soilCommands.size(); i++)
-    	{
-    		MStatement statement = translateSoilCommandtoStatement(soilCommands.get(i));
-    		if (statement != null) genStatements.add(statement); 
-    	}
-    	return genStatements;
-    }*/
+
+    public void visitParameter(MParameter e) {
+    	//add the type of the parameter to the list of Datatype first
+    	if (fPass1 ) {
+            fDataTypes.add(e.type());
+            return;
+        }
+    	String namePrefix = e.owner().cls().name() + "_" + e.owner().name();
+    	String id = genInstance(e, "Parameter", namePrefix);
+    	// add Class_Property link
+        soilCommands.add("insert (" + namePrefix + "Operation ," +
+                     id + ") into C_Operation_Operation_Parameter_OwnedParameter");
+        
+        // add Property_Datatype link for type of attribute
+        String s;
+        if (e.owner().cls().model().getClass(e.type().toString()) == null )
+            s = "DataType";
+        else 
+            s = "Class";
+        soilCommands.add("insert (" + id +  ", " + e.type() + s +
+                ") into A_TypedElement_TypedElement_Type_Type");
+    	
+	}
     
     public void visitPrePostCondition(MPrePostCondition e) {
         //FIXME: implement
@@ -362,5 +388,5 @@ public class MMInstanceGenerator implements MMVisitor {
 	@Override
 	public void visitEnum(EnumType enumType) {
 		// NoOp		
-	}	
+	}
 }

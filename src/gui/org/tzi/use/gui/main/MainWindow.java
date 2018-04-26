@@ -1057,7 +1057,7 @@ public class MainWindow extends JFrame {
     private final ActionViewCreateClassDiagram fActionViewCreateClassDiagram = new ActionViewCreateClassDiagram(false, false,"ClassDiagram.gif");
     //**Meta model menu
     //metamodel class diagram
-    private final ActionViewCreateClassDiagram fActionViewCreateMClassDiagram = new ActionViewCreateClassDiagram(true, false, "MClassDiagram.png");
+    private final ActionViewCreateClassDiagram fActionViewCreateMClassDiagram = new ActionViewCreateClassDiagram(true, false, "");
     
     //simplied metamodel class diagram
     private final ActionViewCreateClassDiagram fActionViewCreateSimplifiedMClassDiagram = new ActionViewCreateClassDiagram(true, true, "");
@@ -1067,7 +1067,7 @@ public class MainWindow extends JFrame {
     
     private final ActionMetricsEvaluation fActionMetricsEvaluation = new ActionMetricsEvaluation();
     
-  //**End: Meta model menu
+    //**End: Meta model menu
 
     private final StateMachineDropdown fStateMachineDropdown = new StateMachineDropdown();
     
@@ -1169,7 +1169,7 @@ public class MainWindow extends JFrame {
             } catch (IOException ex) {
                 fLogWriter.println("File `" + f.toAbsolutePath().toString() + "' not found.");
             }
-            
+            //meta system is for auto-generated meta-instance of the user model (model)
             final MSystem system, metaSystem;
             
             if (model != null) {
@@ -1180,6 +1180,9 @@ public class MainWindow extends JFrame {
             	// create system
             	system = new MSystem(model);
             	metaSystem = new MSystem(mmodel);
+            	//auto generate meta-instance and add it in to metaSystem
+            	
+            	generateMetaObjects(system, metaSystem);
             } else {
             	system = null;
             	metaSystem = null;
@@ -1221,6 +1224,43 @@ public class MainWindow extends JFrame {
             }
             return model;
             
+        }
+        /**
+    	 * Generates metamodel instances of the loaded model into a soil file  
+    	 * @author Doan Hoang
+    	 */
+        
+    	private void generateMetaObjects(MSystem system,MSystem metaSystem) {	
+
+    		MMInstanceGenerator v = new MMInstanceGenerator(metaSystem);
+    		system.model().processWithVisitor(v);
+    		LinkedList<String> genSoilCommands = v.getGeneratedShellCommands();	
+    		
+    		for (int i = 0; i < genSoilCommands.size(); i++)
+    		{
+    			try {
+    				metaSystem.execute(translateSoilCommandtoStatement(metaSystem,genSoilCommands.get(i)));
+    			} catch (MSystemException e1) {
+    				// TODO Auto-generated catch block
+    				e1.printStackTrace();
+    			}
+    		}
+        }
+    	/*
+         * Translate a soilcommand to a statement which can be executed from code
+         */
+        private MStatement translateSoilCommandtoStatement(MSystem fSystem, String line)
+        {
+        	MStatement statement = ShellCommandCompiler.compileShellCommand(
+    				fSystem.model(),
+    				fSystem.state(),
+    				fSystem.getVariableEnvironment(),
+    				line,
+    				"<input>",
+    				new PrintWriter(System.err),
+    				false);
+
+        	return statement;
         }
     }
 
@@ -1651,7 +1691,7 @@ public class MainWindow extends JFrame {
 
     private class ActionMetricsEvaluation extends AbstractAction {
     	ActionMetricsEvaluation() {
-            super("Model Metrics Evaluation", getIcon("OCL.gif"));
+            super("Model Metrics Evaluation", getIcon("metric_evaluation.png"));
         }
 
         @Override
@@ -1903,7 +1943,7 @@ public class MainWindow extends JFrame {
         	if(isMetamodel)
         	{
         		system = fSession.metaSystem();
-        		generateMetaObjects();
+        		//generateMetaObjects();
         	}
         	else
         		system = fSession.system();
@@ -1949,45 +1989,6 @@ public class MainWindow extends JFrame {
             c.add(odv, BorderLayout.CENTER);
             addNewViewFrame(f);
             objectDiagrams.add(odv);
-        }
-        /**
-    	 * Generates metamodel instances of the loaded model into a soil file  
-    	 * @author Doan Hoang
-    	 */
-        
-    	private void generateMetaObjects() {		
-    		MSystem system = fSession.system();
-    		MSystem metaSystem = fSession.metaSystem();
-
-    		MMInstanceGenerator v = new MMInstanceGenerator(metaSystem);
-    		system.model().processWithVisitor(v);
-    		LinkedList<String> genSoilCommands = v.getGeneratedShellCommands();	
-    		
-    		for (int i = 0; i < genSoilCommands.size(); i++)
-    		{
-    			try {
-    				metaSystem.execute(translateSoilCommandtoStatement(metaSystem,genSoilCommands.get(i)));
-    			} catch (MSystemException e1) {
-    				// TODO Auto-generated catch block
-    				e1.printStackTrace();
-    			}
-    		}
-        }
-    	/*
-         * Translate a soilcommand to a statement which can be executed from code
-         */
-        private MStatement translateSoilCommandtoStatement(MSystem fSystem, String line)
-        {
-        	MStatement statement = ShellCommandCompiler.compileShellCommand(
-    				fSystem.model(),
-    				fSystem.state(),
-    				fSystem.getVariableEnvironment(),
-    				line,
-    				"<input>",
-    				new PrintWriter(System.err),
-    				false);
-
-        	return statement;
         }
     }
     

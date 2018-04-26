@@ -45,4 +45,5 @@ public interface MMVisitor {
     void visitPrePostCondition(MPrePostCondition e);
 	void visitSignal(MSignal mSignalImpl);
 	void visitEnum(EnumType enumType);
+	void visitParameter(MParameter mParameter);
 }

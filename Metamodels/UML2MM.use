@@ -2820,51 +2820,119 @@ end
 -- End Figure x.xx
 --------------------------------------------------------------------------------------------------------
 
-
---------------------------------------------------------------------------------------------------------
---HoangDK - class for metrics calculation in the context of a class
---------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------
+--ClassMetrics: class for metrics calculation in the context of a class
+------------------------------------------------------------------------
 class ClassMetrics
 operations
-	-------------------0. Auxiliary operations--------------
+	-------------------0. Auxiliary operations-----------------
 	-----------------------------------------------------------
-	--returns the set of all inherited members of the context class which has the type of operation.
+	--get local defined operations
+	localOperations(): Set(Operation) = 
+		self.class.ownedOperation
+	
+	--get local defined attributes
+	localAttributes(): OrderedSet(Property) = 
+		self.class.ownedAttribute
+	
+	--get a set of associations that the class is a part of
+	allAssociations(): Set(Association) = 
+		self.class.association
+	
+	--get all inherited attributes
+	inheritedAttributes(): Set(NamedElement) =
+		self.class.inheritedMember->select(m|m.oclIsTypeOf(Property))
+	
+	--get all inherited operations
 	inheritedOperations(): Set(NamedElement) =
 		self.class.inheritedMember->select(m|m.oclIsTypeOf(Operation))
 	
-	--return the set of attributes that have another class as their type (not including inheritance)
+	--get attributes that have another class as their type (excluding inheritance)
 	userdefinedTypeAttributes(): OrderedSet(Property) = 
-		self.class.ownedAttribute->select(att|att.type.oclIsTypeOf(Class))
+		localAttributes()->select(att|att.type.oclIsTypeOf(Class))
 		
-	--return all ancestors of the corresponding class
-	allAncestors() : Set(Classifier) = 
-		self.class.generalization.general->closure(generalization.general)
+	--get parameters that have another class as their type
+	userdefinedTypeParameters(): Bag(Parameter) = 
+		localOperations()->collect(op|op.ownedParameterRedefined)
+		->select(att|att.type.oclIsTypeOf(Class))		
 	
-	--return the set of immediate descendents of the corresponding class	
-	children() : Bag(Classifier) = 
-		self.class.generalization.specific
+	--check if a class c is coupled with the class under consideration 
+	--by attribute declaration
+	isCoupledbyAttribute(c: Class): Boolean = 
+		userdefinedTypeAttributes()->collect(att|att.type)->includes(c)
 	
-	--return the set of immediate ancestors of the corresponding class	
-	parents() : Bag(Classifier) = 
-		self.class.generalization.general
+	--check if a class c is coupled with the class under consideration 
+	--by methods' parameters declaration
+	isCoupledbyParameter(c: Class): Boolean = 
+		userdefinedTypeParameters()->collect(pa|pa.type)->includes(c)
+	
+	--check if a class c is coupled with the class under consideration 
+	--by an operation's return type
+	isCoupledbyReturnType(c: Class): Boolean = 
+		localOperations()->collect(op|op.type)->includes(c)
+	
+	--check if a class c is coupled with the class under consideration 
+	--by an association
+	isCoupledbyAssociation(c: Class): Boolean = 
+		allAssociations()->collect(as|as.endType)->includes(c)
+	
+	--get all ancestors of the corresponding class
+	allAncestors() : Set(Class) = 
+		self.class.superClass->closure(superClass)
+		
+	--get all descendants of the corresponding class
+	allDescendants() : Set(Class) = 
+		self.class.subClass->closure(subClass)
+	
+	--get immediate descendants of the corresponding class	
+	children() : Set(Class) = 
+		self.class.subClass
+	
+	--get immediate ancestors of the corresponding class	
+	parents() : Set(Class) = 
+		self.class.superClass
+	
+	--get the maximum length of all inheritance trees from class c to the root classes
+	getMaxInheritancetree(c: Class): Integer = 
+		if c.metrics.parents()->size() = 0 then
+			0
+		else
+			c.metrics.parents()->collect(pc|pc.metrics.getMaxInheritancetree(pc))->max() +1
+		endif
+	
+	--get the number of hierarchies (inheritance trees) from class c to the root classes
+	getNumberofHierarchies(c: Class): Integer = 
+		if c.metrics.parents()->size() = 0 then
+			if c.metrics.children()->size() = 0 then
+				0
+			else
+				1
+			endif
+		else
+			c.metrics.parents()->collect(pc|pc.metrics.getNumberofHierarchies(pc))->sum()
+		endif
+	
 	
 	---------------------1. Size metrics----------------------
 	-----------------------------------------------------------
 	--1.1. Number of Attributes
 	NOA(): Integer = 
-		self.class.ownedAttribute->size()
+		localAttributes()->size()
 		
-	--Number of methods defined in a class (NOM) (includes overridden methods)
+	--1.2. Number of methods defined in a class (NOM) 
+	--(including the overridden methods, excluding the inherited methods)
 	NOM(): Integer =
-		self.class.ownedOperation->size()
+		localOperations()->size()
 	
-	--1.3. Response for a Class (RFC)
-	
-	--1.4. 
+	--1.3. SIZE
 	SIZE2(): Integer = 
 		NOA() + NOM()
 		
-		
+	--1.4. Average Parameters per Class (APPM) 
+	--(including the overridden methods, excluding the inherited methods)
+	APPM(): Real = 
+		localOperations()->collect(op|op.ownedParameterRedefined->size())->sum()/NOM()
+	
 	---------------------2. Complexity metrics----------------------
 	----------------------------------------------------------------
 	--2.1. Number of direct children (NOC)
@@ -2873,41 +2941,67 @@ operations
 	
 	--2.2. Depth of Inheritance (DIT). Fix me: the multi inheritance
 	DIT(): Integer = 
-		self.class.generalization.general->closure(generalization.general)->size()
+		getMaxInheritancetree(self.class)
 	
 	--2.3. The Specialization Index metric
 	SIX(): Real = 
 		(NMO()*DIT())/(NOM()+NMI())
 	
+	--2.4. Number of all ancestors (ACT)
+	ACT(): Integer = 
+		allAncestors()->size()
+	
+	--2.5. Number of all descendants (DCD)
+	DCD(): Integer = 
+		allDescendants()->size()
+	
+	--2.6. Number of hierarchies
+	NOH(): Integer = 
+		getNumberofHierarchies(self.class)
+		
 	---------------------3. OO features metrics----------------------
 	-----------------------------------------------------------------
 			
 	--3.1. Number of non-redefined inherited operations (NMI)
 	NMI(): Integer = 
-		inheritedOperations()->select(op|not self.class.ownedOperation.name->includes(op.name))->size()
+		inheritedOperations()
+			->select(op|not self.class.ownedOperation.name->includes(op.name))->size()
 	
 	--3.2. Number of Methods Overridden (NMO)
 	NMO(): Integer = 
-		inheritedOperations()->select(op|self.class.ownedOperation.name->includes(op.name))->size()
+		inheritedOperations()
+			->select(op|self.class.ownedOperation.name->includes(op.name))->size()
 	
+	--3.3. Number of non-redefined inherited attributes (NAI)
+	NAI(): Integer = 
+		inheritedAttributes()->size() - 
+			localAttributes()->select(at|at.redefinedProperty->notEmpty())->size()
 		
 	--------------------4. Coupling metrics-------------------
 	----------------------------------------------------------
-	--4.1. Data Abstraction Coupling (DAC): number of attributes that have another class as their type (not including inheritance)
+	--4.1. Data Abstraction Coupling (DAC): 
+	--number of attributes that have another class as their type (excluding inheritance)
 	DAC(): Integer =
 		userdefinedTypeAttributes()->size()
 	
-	--4.2. Data Abstraction Coupling 1 (DAC'): number of different classes that are used as types of attributes in a class (not  including inheritance)
+	--4.2. Data Abstraction Coupling 1 (DAC'): 
+	--number of different classes that are used as types of attributes in a class (excluding inheritance)
 	DAC1(): Integer = 
 		userdefinedTypeAttributes()->collect(type)->asSet()->size()
 	
 	--4.3. Number of Association, including the inherited association (NAS)
 	NAS(): Integer =
-		self.class.association->size() + allAncestors().collect(association)->size()
+		allAssociations()->size() + allAncestors().collect(association)->size()
 		
-	--4.4. Coupling Between Object (CBO)
+	--4.4. Coupling Between Object (CBO). !!This metric can only be approximately measured
+	CBO(): Integer =
+		Class.allInstances()->excluding(self.class)->select(c|isCoupledbyAttribute(c) 
+		or isCoupledbyParameter(c) or isCoupledbyReturnType(c) or isCoupledbyAssociation(c))->size()
 	
 	--4.5. Direct Class Coupling (DCC)
+	DCC(): Integer =
+		Class.allInstances()->excluding(self.class)->select(c|isCoupledbyAttribute(c) 
+		or isCoupledbyParameter(c))->size()
 	
 end
 
@@ -2916,7 +3010,9 @@ association A_ClassMetrics_metrics_Class_class between
 	ClassMetrics[1] role metrics 
 end
 
-
+---------------------------------------------------------------------------------
+--ModelMetrics: class for metrics calculation in the context of whole class model
+---------------------------------------------------------------------------------
 class ModelMetrics
 operations
 	---------------------1. Size metrics----------------------
@@ -2928,19 +3024,33 @@ operations
 	NAssoc(): Integer = 
 		Association.allInstances()-> size()
 	
-	---------------------1. Complexity metrics----------------------
-	-----------------------------------------------------------
+	---------------------2. Complexity metrics------------------
+	------------------------------------------------------------
 	--2.1. Number of hierarchies (NOH)
+	NOH(): Integer =
+		Class.allInstances()->select(c|c.metrics.children()->size() = 0)->collect(lc|lc.metrics.NOH())->sum()
 	
 	--2.2. Maximum Depth of Inheritance (MaxDIT)
-	
+	MaxDIT(): Integer = 
+		Class.allInstances()->collect(c|c.metrics.DIT())->max()
 
 	---------------------3. OO features metrics----------------------
 	-----------------------------------------------------------------
-	--3.3. Attribute inheritance factor (AIF)
-	
-	--3.4. Method inheritance factor (MIF)
+	--3.1. Attribute inheritance factor (AIF)
+	AIF(): Real = 
+		(Class.allInstances()->collect(c|c.metrics.NAI())->sum())/
+		(Class.allInstances()->collect(c|c.metrics.NAI()+c.metrics.NOA())->sum())
+		
+	--3.2. Method inheritance factor (MIF)
 	MIF(): Real = 
 		(Class.allInstances()->collect(c|c.metrics.NMI())->sum())/
 		(Class.allInstances()->collect(c|c.metrics.NMI()+c.metrics.NOM())->sum())
+	
+	--3.3. Polymorphism Factor (PF)
+	PF(): Real =
+		(Class.allInstances()->collect(c|c.metrics.NMO())->sum())/
+		(Class.allInstances()->collect(c|(c.metrics.NOM() - c.metrics.NMO()) * c.metrics.DCD())->sum())
+	--3.4. Abstractness (A)
+	A(): Real =
+		(Class.allInstances()->select(c|c.isAbstract = true)->size())/DSC()
 end
