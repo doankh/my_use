@@ -21,12 +21,13 @@
 
 package org.tzi.use.gui.views.diagrams.classdiagram;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,30 +58,51 @@ public class MClassDiagramView extends ClassDiagramView{
     	Set<String> modelElements = getModelElements();
     	if(isSimplied)//Simplied Class Diagram Metamodel
     	{
-    		Set<String> metaClassName = Collections.emptySet();
-    		Set<String> metaAssociationNames = Collections.emptySet();
-        	//hide all elements when creating the metamodel
+    		Set<String> metaClassNames = new HashSet<String>();
+    		Set<String> metaAssociationNames = new HashSet<String>();
+    		List<MAssociation> directMetaAssociations = new ArrayList<MAssociation>();
+    		Set<MClass> directMetaClasses = new HashSet<MClass>();
+        	//hide all elements
     		classDiagram().hideAll();
-    		//Show related meta classes
+    		//get related meta classes/associations need to be shown
 	        for (String str : modelElements)
         	{
-	        	metaClassName = relatedMetaClasses.get(str);
-	        	if(metaClassName != null)
-	        		for(String className : metaClassName)
-	        			if(mModel.getClass(className) != null) classDiagram().showClass(mModel.getClass(className));
+	        	metaClassNames = relatedMetaClasses.get(str);
+	        	metaAssociationNames = relatedMetaAssociations.get(str);
+	        	if(metaAssociationNames != null)
+	        		for(String assName : metaAssociationNames)
+	        		{
+	        			MAssociation tmp = mModel.getAssociation(assName);
+	        			if (tmp != null)directMetaAssociations.add(tmp);
+	        		}
+	        			
+	        	if(metaClassNames != null)
+	        		for(String clsName : metaClassNames)
+	        		{
+	        			MClass tmp = mModel.getClass(clsName);
+	        			if (tmp != null)directMetaClasses.add(tmp);
+	        		}
         	}
 	        
-	        //Hide associations that are not related 
-	        Set<String> allModelElements = relatedMetaAssociations.keySet();
-	        for (String str : allModelElements)
+//	        boolean ck1 = true; //show all supperclasses of the direct meta classes
+//	        Set<MClass> allMetaClasses = new HashSet<MClass>();
+//	        if(ck1)
+//	        {
+//	        	for(MClass cls : directMetaClasses)
+//	        		allMetaClasses.addAll(cls.allParents());
+//	        }
+//	        allMetaClasses.addAll(directMetaClasses);
+	                
+	        //Show meta classes
+	        for(MClass cls : directMetaClasses)
+	        	classDiagram().showClass(cls);
+	        
+	        //Hide unneeded associations
+	        Collection<MAssociation> allMetaAssociations = mModel.associations();
+	        for(MAssociation ass : allMetaAssociations)
 	        {
-	        	if (!modelElements.contains(str))
-	        	{
-	        		metaAssociationNames = relatedMetaAssociations.get(str);
-	        		if(metaAssociationNames != null)
-	        			for (String assocName : metaAssociationNames)
-	        				if(mModel.getAssociation(assocName) != null) classDiagram().hideAssociation(mModel.getAssociation(assocName));
-	        	}
+	        	if(!directMetaAssociations.contains(ass))
+	        		classDiagram().hideAssociation(ass);
 	        }
 	        //Hide unused associations
 	        hideUnusedAssociation(mModel);
@@ -92,12 +114,12 @@ public class MClassDiagramView extends ClassDiagramView{
     	relatedMetaClasses.clear();
     	relatedMetaAssociations.clear();
     	
-    	relatedMetaClasses.put("Class", new HashSet<String>(Arrays.asList("Class")));
-    	relatedMetaClasses.put("Attribute", new HashSet<String>(Arrays.asList("Property", "DataType")));
+    	relatedMetaClasses.put("Class", new HashSet<String>(Arrays.asList("Class", "Classifier")));
+    	relatedMetaClasses.put("Attribute", new HashSet<String>(Arrays.asList("Property", "DataType", "StructuralFeature", "TypedElement", "Type")));
     	relatedMetaClasses.put("Association", new HashSet<String>(Arrays.asList("Association")));
     	relatedMetaClasses.put("AssociationEnd", new HashSet<String>(Arrays.asList("Property")));
-    	relatedMetaClasses.put("Operation", new HashSet<String>(Arrays.asList("Operation")));
-    	relatedMetaClasses.put("Parameter", new HashSet<String>(Arrays.asList("Parameter")));
+    	relatedMetaClasses.put("Operation", new HashSet<String>(Arrays.asList("Operation", "Type")));
+    	relatedMetaClasses.put("Parameter", new HashSet<String>(Arrays.asList("Parameter", "DataType", "StructuralFeature", "TypedElement", "Type")));
     	relatedMetaClasses.put("AssociationClass", new HashSet<String>(Arrays.asList("AssociationClass")));
     	relatedMetaClasses.put("Generalization", new HashSet<String>(Arrays.asList("Generalization")));
     	//End of meta classes mapping
@@ -105,10 +127,9 @@ public class MClassDiagramView extends ClassDiagramView{
     	relatedMetaAssociations.put("Attribute", new HashSet<String>(Arrays.asList("C_Class_Class_Property_OwnedAttribute",
     			"A_TypedElement_TypedElement_Type_Type")));
     	relatedMetaAssociations.put("Association", new HashSet<String>(Arrays.asList("A_Association_Association_Type_EndType")));
-    	relatedMetaAssociations.put("AssociationEnd", new HashSet<String>(Arrays.asList("A_Association_Association_Property_MemberEnd",
-    			"C_Association_OwningAssociation_Property_OwnedEnd","A_Association_Association_Property_NavigableOwnedEnd")));
+    	relatedMetaAssociations.put("AssociationEnd", new HashSet<String>(Arrays.asList("C_Association_OwningAssociation_Property_OwnedEnd")));
     	relatedMetaAssociations.put("Operation", new HashSet<String>(Arrays.asList("C_Class_Class_Operation_OwnedOperation",
-    			"A_TypedElement_TypedElement_Type_Type")));
+    			"A_Operation_Operation_Type_Type")));
     	relatedMetaAssociations.put("Parameter", new HashSet<String>(Arrays.asList("C_Operation_Operation_Parameter_OwnedParameter", "A_TypedElement_TypedElement_Type_Type"))); 	
     	relatedMetaAssociations.put("Generalization", new HashSet<String>(Arrays.asList("A_Class_Class_Class_SuperClass",
     			"C_Classifier_Specific_Generalization_Generalization","A_Classifier_General_Generalization_Generalization")));
@@ -118,7 +139,7 @@ public class MClassDiagramView extends ClassDiagramView{
     	relatedMetaAssociations.put("Subsetted AssociationEnd", new HashSet<String>(Arrays.asList("A_Property_Property_Property_SubsettedProperty")));
     }
     
-    
+    //get all elements in the model, e.g., class, attributes, operations, . ..  
     private Set<String> getModelElements()
     {
 		MModel mModel = system().model();
@@ -147,6 +168,8 @@ public class MClassDiagramView extends ClassDiagramView{
 			}
 		if(ck1)modelElements.add("Operation");
 		if(ck2)modelElements.add("Parameter");
+		
+		ck1 = false; ck2=false; ck3 = false;
 		
 		if(!mModel.associations().isEmpty())
 		{

@@ -193,7 +193,6 @@ public class MMInstanceGenerator implements MMVisitor {
 /*            // add to model namespace
             fOut.println("!insert (" + fModelId + ", " + id +
                          ") into Namespace_ModelElement");*/
-            
         }
 
         // visit attributes
