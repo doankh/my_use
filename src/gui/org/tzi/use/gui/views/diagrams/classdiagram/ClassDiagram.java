@@ -190,7 +190,7 @@ public class ClassDiagram extends DiagramView
 
 	@Override
 	public void resetLayout() {
-		fParent.initDiagram(false, (ClassDiagramOptions)fOpt, false);
+		fParent.initDiagram(false, (ClassDiagramOptions)fOpt);
 		fParent.validate();
 	}
 	
@@ -1289,26 +1289,32 @@ public class ClassDiagram extends DiagramView
     	
     	// store node positions in property object
         for (ClassNode n : data.fClassToNodeMap.values()) {
+        	n.setHidden(!visible);
             n.storePlacementInfo( helper, parent, !visible );
         }
 
         for (EnumNode n : data.fEnumToNodeMap.values()) {
-            n.storePlacementInfo( helper, parent, !visible );
+        	n.setHidden(!visible);
+        	n.storePlacementInfo( helper, parent, !visible );
         }
         
         for (DiamondNode n : data.fNaryAssocToDiamondNodeMap.values()) {
+        	n.setHidden(!visible);
         	n.storePlacementInfo( helper, parent, !visible );
         }
 
         for (BinaryAssociationOrLinkEdge e : data.fBinaryAssocToEdgeMap.values()) {
+        	e.setHidden(!visible);
         	e.storePlacementInfo( helper, parent, !visible );
         }
         
         for (EdgeBase e : data.fAssocClassToEdgeMap.values()) {
+        	e.setHidden(!visible);
         	e.storePlacementInfo( helper, parent, !visible );
         }
         
         for (GeneralizationEdge e : data.fGenToGeneralizationEdge.values()) {
+        	e.setHidden(!visible);
         	e.storePlacementInfo( helper, parent, !visible );
         }
     }

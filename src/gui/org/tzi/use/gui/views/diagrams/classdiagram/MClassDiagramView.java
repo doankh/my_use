@@ -21,6 +21,7 @@
 
 package org.tzi.use.gui.views.diagrams.classdiagram;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,19 +52,34 @@ import org.tzi.use.uml.sys.MSystem;
 public class MClassDiagramView extends ClassDiagramView{
 	Map<String, Set<String>> relatedMetaClasses = new HashMap<String, Set<String>>();
 	Map<String, Set<String>> relatedMetaAssociations = new HashMap<String, Set<String>>();
-    public MClassDiagramView( MainWindow mainWindow, MSystem system, MSystem metaSystem, boolean loadLayout, boolean isSimplied) { 
-    	super(mainWindow,system,metaSystem,loadLayout,true);
+	Map<String, Set<String>> subDiagramClasses = new HashMap<String, Set<String>>();
+	Path layoutFile;
+    public MClassDiagramView( MainWindow mainWindow, MSystem system, MSystem metaSystem, boolean loadLayout, boolean isSimplied, String diagramName) { 
+    	super(mainWindow,metaSystem,loadLayout);
     	MModel mModel = metaSystem.model();
-    	initMappings();
-    	Set<String> modelElements = getModelElements();
-    	if(isSimplied)//Simplied Class Diagram Metamodel
+    	Set<String> modelElements = getModelElements(system.model());
+    	
+    	try{
+			layoutFile = this.fClassDiagram.getOptions().getDirectory().resolve(diagramName + ".clt");
+			//load corresponding layout
+			this.fClassDiagram.loadLayout(layoutFile);
+			}
+			catch (Exception e)
+			{
+				//this.fClassDiagram.getLog().println("Error loading default Meta-Sub diagram. Load full diagram");
+				this.fClassDiagram.resetLayout();
+			}
+    	
+    	if(isSimplied)//Simplified Class Diagram Metamodel
     	{
+			
+    		initMappings();
     		Set<String> metaClassNames = new HashSet<String>();
     		Set<String> metaAssociationNames = new HashSet<String>();
     		List<MAssociation> directMetaAssociations = new ArrayList<MAssociation>();
     		Set<MClass> directMetaClasses = new HashSet<MClass>();
         	//hide all elements
-    		classDiagram().hideAll();
+    		//this.fClassDiagram.hideAll();
     		//get related meta classes/associations need to be shown
 	        for (String str : modelElements)
         	{
@@ -84,29 +100,41 @@ public class MClassDiagramView extends ClassDiagramView{
 	        		}
         	}
 	        
-//	        boolean ck1 = true; //show all supperclasses of the direct meta classes
-//	        Set<MClass> allMetaClasses = new HashSet<MClass>();
-//	        if(ck1)
-//	        {
-//	        	for(MClass cls : directMetaClasses)
-//	        		allMetaClasses.addAll(cls.allParents());
-//	        }
-//	        allMetaClasses.addAll(directMetaClasses);
-	                
-	        //Show meta classes
-	        for(MClass cls : directMetaClasses)
-	        	classDiagram().showClass(cls);
+	      //Hide unneeded associations
+	        Collection<MClass> allMetaClasses = mModel.classes();
+	        for(MClass cls : allMetaClasses)
+	        {
+	        	if(!directMetaClasses.contains(cls))
+	        		this.fClassDiagram.hideClass(cls);
+	        }
 	        
 	        //Hide unneeded associations
 	        Collection<MAssociation> allMetaAssociations = mModel.associations();
 	        for(MAssociation ass : allMetaAssociations)
 	        {
 	        	if(!directMetaAssociations.contains(ass))
-	        		classDiagram().hideAssociation(ass);
+	        		this.fClassDiagram.hideAssociation(ass);
 	        }
 	        //Hide unused associations
 	        hideUnusedAssociation(mModel);
-    	}
+		}
+    }
+    
+    private void initSubdiagramClasses()
+    {
+    	subDiagramClasses.clear();
+    	subDiagramClasses.put("Namespaces diagram", new HashSet<String>(Arrays.asList("Element", "NamedElement", "Namespace", "PackageableElement", "DirectedRelationship",
+    										"ElementImport", "PackageableImport", "Package")));
+    	subDiagramClasses.put("Classifiers diagram", new HashSet<String>(Arrays.asList("Classifier", "NamedElement", "Namespace", "RedefinableElement", "Type",
+				"Feature", "StructuralFeature", "Property","Generalization","DirectedRelationship")));
+    	subDiagramClasses.put("Features diagram", new HashSet<String>(Arrays.asList("Classifier", "NamedElement", "Namespace", "RedefinableElement", "Type", "TypedElement",
+				"Feature", "StructuralFeature", "MultiplicityElement","Parameter", "BehavioralFeature")));
+    	subDiagramClasses.put("Operations diagram", new HashSet<String>(Arrays.asList("Constraint", "NamedElement", "Namespace", "ValueSpecification", "Type", "TypedElement",
+				"Parameter", "BehavioralFeature", "Operation")));
+    	subDiagramClasses.put("Classes diagram", new HashSet<String>(Arrays.asList("Class", "Classifier", "Type", "Operation", "Association", "Relationship",
+				"StructuralFeature", "Property","ValueSpecification")));
+    	subDiagramClasses.put("DataTypes diagram", new HashSet<String>(Arrays.asList("DataType", "InstanceSpecification", "Classifier", "BehavioralFeature", "Operation",
+    			"Feature", "StructuralFeature", "Property","PrimitiveType", "Enumeration","EnumerationLiteral")));
     }
     
     private void initMappings()
@@ -140,9 +168,8 @@ public class MClassDiagramView extends ClassDiagramView{
     }
     
     //get all elements in the model, e.g., class, attributes, operations, . ..  
-    private Set<String> getModelElements()
+    private Set<String> getModelElements(MModel mModel)
     {
-		MModel mModel = system().model();
 		Set<String> modelElements = new HashSet<String>();
 		modelElements.add("Class");
 		Collection<MClass> allClasses = mModel.classes();
@@ -207,6 +234,6 @@ public class MClassDiagramView extends ClassDiagramView{
     	Set<String> unUsedAssoc = new HashSet<String>(Arrays.asList("A_Property_Property_Property_Opposite",
     			"A_Operation_Operation_Operation_RedefinedOperation", "C_Property_AssociationEnd_Property_Qualifier"));
     	for(String assocName : unUsedAssoc)
-    		if(mModel.getAssociation(assocName) != null) classDiagram().hideAssociation(mModel.getAssociation(assocName));
+    		if(mModel.getAssociation(assocName) != null) this.fClassDiagram.hideAssociation(mModel.getAssociation(assocName));
     }
 }

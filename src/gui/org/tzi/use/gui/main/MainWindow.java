@@ -51,7 +51,9 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -452,12 +454,20 @@ public class MainWindow extends JFrame {
         mi.setMnemonic('a');
 
         // create Meta model menu
-        menu = new JMenu("Meta Model");
+        menu = new JMenu("Meta Modeling");
         menu.setMnemonic('M');
 		fMenuBar.add(menu);
-		mi = menu.add(fActionViewCreateMClassDiagram);
-        
-        mi = menu.add(fActionViewCreateSimplifiedMClassDiagram);
+		
+		mi = menu.add(new ActionViewCreateClassDiagram(true, false, "Full Meta-model class diagram", ""));
+		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified class diagram", ""));
+		
+		submenu = new JMenu("Sub Meta-Model Class Diagram");
+		submenu.setMnemonic('s');
+		menu.add(submenu);
+		Set<String> subMClassDiagrams = new HashSet<String>(Arrays.asList("Namespaces diagram",
+				"Classifiers diagram","Features diagram", "Operations diagram", "Classes diagram", "DataTypes diagram"));
+		for(String m: subMClassDiagrams)
+			submenu.add(new ActionViewCreateClassDiagram(true, false, m, ""));
         
         mi = menu.add(fActionGenerateMetamodelObjectDiagram);
         
@@ -1054,13 +1064,11 @@ public class MainWindow extends JFrame {
 
     private final ActionViewCreateLinkCount fActionViewCreateLinkCount = new ActionViewCreateLinkCount();
 
-    private final ActionViewCreateClassDiagram fActionViewCreateClassDiagram = new ActionViewCreateClassDiagram(false, false,"ClassDiagram.gif");
-    //**Meta model menu
-    //metamodel class diagram
-    private final ActionViewCreateClassDiagram fActionViewCreateMClassDiagram = new ActionViewCreateClassDiagram(true, false, "");
+    private final ActionViewCreateClassDiagram fActionViewCreateClassDiagram = new ActionViewCreateClassDiagram(false, false, "Class diagram", "ClassDiagram.gif");
     
-    //simplied metamodel class diagram
-    private final ActionViewCreateClassDiagram fActionViewCreateSimplifiedMClassDiagram = new ActionViewCreateClassDiagram(true, true, "");
+    //**Meta model menu
+    //meta-model class diagram
+    private final ActionViewCreateClassDiagram fActionViewCreateMClassDiagram = new ActionViewCreateClassDiagram(true, false, "Full Meta-model class diagram", "");
     
     //metamodel object diagram
     private final ActionViewCreateObjectDiagram fActionGenerateMetamodelObjectDiagram = new ActionViewCreateObjectDiagram(true);
@@ -1810,11 +1818,13 @@ public class MainWindow extends JFrame {
     private class ActionViewCreateClassDiagram extends AbstractAction {
         private boolean isMetamodel;
         private boolean isSimplifiedMModel;
+        private String diagramName;
         private String iconName;
-    	ActionViewCreateClassDiagram(boolean _isMetamodel, boolean _isSimplified, String _iconName) {
-            super(!_isMetamodel? "Class diagram": _isSimplified? "Simplified Meta Model":"Full Meta Model", getIcon(_iconName));
+    	ActionViewCreateClassDiagram(boolean _isMetamodel, boolean _isSimplified, String _diagramName, String _iconName) {
+            super(_diagramName, getIcon(_iconName));
             isMetamodel = _isMetamodel;
             isSimplifiedMModel = _isSimplified;
+            diagramName = _diagramName;
             iconName= _iconName;
         }
 
@@ -1822,10 +1832,10 @@ public class MainWindow extends JFrame {
 		public void actionPerformed(ActionEvent e) {
         	// Don' load layout if shift key is pressed
         	boolean loadLayout = (e.getModifiers() & ActionEvent.SHIFT_MASK) == 0;
-        	String  windowTitle = isMetamodel==false?"Class diagram":"Metamodel Class diagram";      	
+        	String  windowTitle = isMetamodel==false?"Class diagram":"Metamodel Class diagram - " + diagramName;      	
             ClassDiagramView cdv;
-            if(isMetamodel)cdv = new MClassDiagramView(MainWindow.this, fSession.system(), fSession.metaSystem(), loadLayout,isSimplifiedMModel);
-            else cdv = new ClassDiagramView(MainWindow.this, fSession.system(), fSession.metaSystem(), loadLayout,false);
+            if(isMetamodel)cdv = new MClassDiagramView(MainWindow.this, fSession.system(), fSession.metaSystem(), false, isSimplifiedMModel, diagramName); //load defalut layout if isSimplified metamodel
+            else cdv = new ClassDiagramView(MainWindow.this, fSession.system(), loadLayout);
             ViewFrame f = new ViewFrame(windowTitle, cdv, iconName);
             // give some help information
             f.addInternalFrameListener(new InternalFrameAdapter() {

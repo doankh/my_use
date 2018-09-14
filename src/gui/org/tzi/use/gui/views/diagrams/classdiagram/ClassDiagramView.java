@@ -39,7 +39,6 @@ import org.tzi.use.uml.mm.MAssociation;
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.mm.MClassifier;
 import org.tzi.use.uml.mm.MGeneralization;
-import org.tzi.use.uml.mm.MModel;
 import org.tzi.use.uml.mm.commonbehavior.communications.MSignal;
 import org.tzi.use.uml.ocl.type.EnumType;
 import org.tzi.use.uml.sys.MSystem;
@@ -56,31 +55,21 @@ public class ClassDiagramView extends JPanel
                                  implements View, 
                                             PrintableView {
 
-    private final MainWindow fMainWindow;
+    protected final MainWindow fMainWindow;
     
     private final MSystem fSystem;
-    private final MSystem fMetaSystem;
     
-    private ClassDiagram fClassDiagram;
-/*
+    protected ClassDiagram fClassDiagram;
+
     public ClassDiagramView( MainWindow mainWindow, MSystem system, boolean loadLayout ) { 
     	this.setFocusable(true);
         fMainWindow = mainWindow;
         fSystem = system;
         setLayout( new BorderLayout() );
-        initDiagram(loadLayout, null, false);
-    }
-    */
-    public ClassDiagramView( MainWindow mainWindow, MSystem system, MSystem metaSystem, boolean loadLayout, boolean isMetamodel) { 
-    	this.setFocusable(true);
-        fMainWindow = mainWindow;
-        fSystem = system;
-        fMetaSystem = metaSystem;
-        setLayout( new BorderLayout() );
-        initDiagram(loadLayout, null, isMetamodel);
+        initDiagram(loadLayout, null);
     }
 
-	public void initDiagram(boolean loadDefaultLayout, ClassDiagramOptions opt, boolean isMetamodel) {
+	public void initDiagram(boolean loadDefaultLayout, ClassDiagramOptions opt) {
 		if (opt == null)
 			fClassDiagram = new ClassDiagram( this, fMainWindow.logWriter());
 		else
@@ -90,9 +79,9 @@ public class ClassDiagramView extends JPanel
 		this.removeAll();
         add( new JScrollPane(fClassDiagram) );
 		
-        initState(isMetamodel);
+        initState();
         
-        if (loadDefaultLayout && !isMetamodel) {
+        if (loadDefaultLayout) {
         	fClassDiagram.loadDefaultLayout();
         }
 	}
@@ -101,14 +90,7 @@ public class ClassDiagramView extends JPanel
         return fSystem;
     }
     
-    public MSystem metaSystem() {
-        return fMetaSystem;
-    }
     
-    public ClassDiagram classDiagram()
-    {
-    	return fClassDiagram;
-    }
     /**
      * Returns the model browser.
      */
@@ -133,27 +115,27 @@ public class ClassDiagramView extends JPanel
      * the specified element to a graphic
      * instance.
      */
-    private void initState(boolean isMetamodel) {
-    	MModel model = (isMetamodel==false?fSystem.model(): fMetaSystem.model());
+    private void initState() {
+    	
         // read Classes
-        Collection<MClass> allClasses = model.classes();
+        Collection<MClass> allClasses = fSystem.model().classes();
         for (MClass cls : allClasses) {
             fClassDiagram.addClass( cls );
         }
 
         // read Enumerations
-        Collection<EnumType> allEnums = model.enumTypes();
+        Collection<EnumType> allEnums = fSystem.model().enumTypes();
         for (EnumType enumeration : allEnums) {
             fClassDiagram.addEnum( enumeration );
         }
 
         // read signals
-        for (MSignal s : model.getSignals()) {
+        for (MSignal s : fSystem.model().getSignals()) {
             fClassDiagram.addSignal( s );
         }
         
         // read generalizations
-        DirectedGraph<MClassifier, MGeneralization> genGraph = model.generalizationGraph();
+        DirectedGraph<MClassifier, MGeneralization> genGraph = fSystem.model().generalizationGraph();
         Iterator<MGeneralization> edgeIter = genGraph.edgeIterator();
         while ( edgeIter.hasNext() ) {
             MGeneralization gen = edgeIter.next();
@@ -161,14 +143,13 @@ public class ClassDiagramView extends JPanel
         }
  
         // read Associations
-        Collection<MAssociation> allAssociations = model.associations();
+        Collection<MAssociation> allAssociations = fSystem.model().associations();
         for (MAssociation assoc : allAssociations) {
             fClassDiagram.addAssociation( assoc );
         }
         
         fClassDiagram.initialize();
     }
-    
     
     @Override
 	public void printView( PageFormat pf ) {
