@@ -21,6 +21,7 @@
 
 package org.tzi.use.uml.mm;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -29,7 +30,10 @@ import java.util.Set;
 import org.tzi.use.uml.mm.commonbehavior.communications.MSignal;
 import org.tzi.use.uml.ocl.expr.VarDecl;
 import org.tzi.use.uml.ocl.expr.VarDeclList;
+import org.tzi.use.uml.ocl.type.CollectionType;
 import org.tzi.use.uml.ocl.type.EnumType;
+import org.tzi.use.uml.ocl.type.TupleType;
+import org.tzi.use.uml.ocl.type.TupleType.Part;
 import org.tzi.use.uml.ocl.type.Type;
 import org.tzi.use.uml.sys.MSystem;
 import org.tzi.use.util.StringUtil;
@@ -152,8 +156,9 @@ public class MMInstanceGenerator implements MMVisitor {
     }
 
     public void visitAttribute(MAttribute e) {
-        if (fPass1 ) {
-            fDataTypes.add(e.type());
+    	Set<Type> allType = getInstantiationDatatype(e.type());
+    	if (fPass1 ) {
+			fDataTypes.addAll(allType);
             return;
         }
         String id = genInstance(e, "Property",e.owner().name());
@@ -170,12 +175,15 @@ public class MMInstanceGenerator implements MMVisitor {
         
         // add Property_Datatype link for type of attribute
         String s;
-        if (e.owner().model().getClass(e.type().toString()) == null )
-            s = "DataType";
-        else 
-            s = "Class";
-        soilCommands.add("insert (" + id +  ", " + e.type() + s +
-                ") into A_TypedElement_TypedElement_Type_Type");
+        for(Type t: allType)
+        {
+	        if (e.owner().model().getClass(t.toString()) == null )
+	            s = "DataType";
+	        else 
+	            s = "Class";
+	        soilCommands.add("insert (" + id +  ", " + t + s +
+	                ") into A_TypedElement_TypedElement_Type_Type");
+        }
     }
 
     public void visitClass(MClass e) {
@@ -253,10 +261,11 @@ public class MMInstanceGenerator implements MMVisitor {
         /*fOut.println("-- DataTypes");*/
         
         for (Type t : fDataTypes) {
-            if (e.getClass(t.toString()) == null ) {
-                String id = t.toString() + "DataType";
-                soilCommands.add("create " + id + " : DataType");
-                soilCommands.add("set " + id + ".name := '" + t.toString() + "'");
+        	String id;        		
+    		if (e.getClass(t.toString()) == null) {
+            id = t.toString() + "DataType";
+            soilCommands.add("create " + id + " : DataType");
+            soilCommands.add("set " + id + ".name := '" + t.toString() + "'");
             }
         }
 
@@ -293,9 +302,10 @@ public class MMInstanceGenerator implements MMVisitor {
 
     public void visitOperation(MOperation e) {
     	VarDeclList paras =  e.paramList();
+    	Set<Type> allType = getInstantiationDatatype(e.resultType());
     	//if the operation has a return type -> add the return type to the list of Datatype first
         if (fPass1 ) {
-            if (e.hasResultType()) fDataTypes.add(e.resultType());
+            if (e.hasResultType()) fDataTypes.addAll(allType);
             //visit list of parameters for the first time to get the datatype of parameters     
 	        for (VarDecl dec : paras)
 	        {
@@ -318,13 +328,16 @@ public class MMInstanceGenerator implements MMVisitor {
 	        String s;
 	        if (e.hasResultType())
 	        {
-		        if (e.cls().model().getClass(e.resultType().toString()) == null )
-		            s = "DataType";
-		        //FIXME: no association when the resultType of a operation is a class 
-		        else 
-		            s = "Class";
-		        soilCommands.add("insert (" + id +  ", " + e.resultType() + s +
-		                ") into A_Operation_Operation_Type_Type");
+	        	for(Type t: allType)
+	        	{
+			        if (e.cls().model().getClass(t.toString()) == null )
+			            s = "DataType";
+			        //FIXME: no association when the resultType of a operation is a class 
+			        else 
+			            s = "Class";
+			        soilCommands.add("insert (" + id +  ", " + t + s +
+			                ") into A_Operation_Operation_Type_Type");
+	        	}
 	        }
 	        //visit list of parameters	        
 	        for (VarDecl dec : paras)
@@ -349,8 +362,9 @@ public class MMInstanceGenerator implements MMVisitor {
 
     public void visitParameter(MParameter e) {
     	//add the type of the parameter to the list of Datatype first
+    	Set<Type> allType = getInstantiationDatatype(e.type());
     	if (fPass1 ) {
-            fDataTypes.add(e.type());
+            fDataTypes.addAll(allType);
             return;
         }
     	String namePrefix = e.owner().cls().name() + "_" + e.owner().name();
@@ -361,13 +375,15 @@ public class MMInstanceGenerator implements MMVisitor {
         
         // add Property_Datatype link for type of attribute
         String s;
-        if (e.owner().cls().model().getClass(e.type().toString()) == null )
-            s = "DataType";
-        else 
-            s = "Class";
-        soilCommands.add("insert (" + id +  ", " + e.type() + s +
-                ") into A_TypedElement_TypedElement_Type_Type");
-    	
+        for(Type t: allType)
+        {
+	        if (e.owner().cls().model().getClass(t.toString()) == null )
+	            s = "DataType";
+	        else 
+	            s = "Class";
+	        soilCommands.add("insert (" + id +  ", " + e.type() + s +
+	                ") into A_TypedElement_TypedElement_Type_Type");
+        }
 	}
     
     public void visitPrePostCondition(MPrePostCondition e) {
@@ -386,6 +402,31 @@ public class MMInstanceGenerator implements MMVisitor {
 
 	@Override
 	public void visitEnum(EnumType enumType) {
-		// NoOp		
+	// NoOp	
+
+	}
+	
+	//if t is a CollectionType -> return the type of its element
+	//if t is a TupleType -> return type of all its parts
+	//otherwise return t
+	@SuppressWarnings("unchecked")
+	private Set<Type> getInstantiationDatatype(Type t){
+		//Set<Type> t1 = new HashSet<Type>();
+		if(!(t instanceof CollectionType) && !(t instanceof TupleType))
+			return new HashSet<>(Arrays.asList(t));
+		else
+			if(t instanceof CollectionType)
+				return getInstantiationDatatype(((CollectionType) t).elemType());
+			else
+			{
+				Set<Type> t1 = new HashSet<Type>();
+				
+				for(Part p: ((TupleType) t).getParts().values())
+				{
+					t1.addAll(getInstantiationDatatype(p.type()));
+				}
+				return t1;
+			}
+		
 	}
 }
