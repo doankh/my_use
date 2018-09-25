@@ -46,7 +46,7 @@ import org.tzi.use.uml.sys.MSystem;
  * current instance of MModel
  *
  * @version $ProjectVersion: 0.393 $
- * @author Hoang Doan
+ * @author Khanh-Hoang Doan
  * */
 @SuppressWarnings("serial")
 public class MClassDiagramView extends ClassDiagramView{
@@ -118,23 +118,6 @@ public class MClassDiagramView extends ClassDiagramView{
 	        //Hide unused associations
 	        hideUnusedAssociation(mModel);
 		}
-    }
-    
-    private void initSubdiagramClasses()
-    {
-    	subDiagramClasses.clear();
-    	subDiagramClasses.put("Namespaces diagram", new HashSet<String>(Arrays.asList("Element", "NamedElement", "Namespace", "PackageableElement", "DirectedRelationship",
-    										"ElementImport", "PackageableImport", "Package")));
-    	subDiagramClasses.put("Classifiers diagram", new HashSet<String>(Arrays.asList("Classifier", "NamedElement", "Namespace", "RedefinableElement", "Type",
-				"Feature", "StructuralFeature", "Property","Generalization","DirectedRelationship")));
-    	subDiagramClasses.put("Features diagram", new HashSet<String>(Arrays.asList("Classifier", "NamedElement", "Namespace", "RedefinableElement", "Type", "TypedElement",
-				"Feature", "StructuralFeature", "MultiplicityElement","Parameter", "BehavioralFeature")));
-    	subDiagramClasses.put("Operations diagram", new HashSet<String>(Arrays.asList("Constraint", "NamedElement", "Namespace", "ValueSpecification", "Type", "TypedElement",
-				"Parameter", "BehavioralFeature", "Operation")));
-    	subDiagramClasses.put("Classes diagram", new HashSet<String>(Arrays.asList("Class", "Classifier", "Type", "Operation", "Association", "Relationship",
-				"StructuralFeature", "Property","ValueSpecification")));
-    	subDiagramClasses.put("DataTypes diagram", new HashSet<String>(Arrays.asList("DataType", "InstanceSpecification", "Classifier", "BehavioralFeature", "Operation",
-    			"Feature", "StructuralFeature", "Property","PrimitiveType", "Enumeration","EnumerationLiteral")));
     }
     
     private void initMappings()

@@ -17,7 +17,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-// $Id: ObjectNode.java 5494 2015-02-05 12:59:25Z lhamann $
+// $Id: ObjectNode.java 6300 2018-01-14 12:22:29Z andreask $
 
 package org.tzi.use.gui.views.diagrams.objectdiagram;
 
@@ -58,13 +58,15 @@ public class ObjectNode extends PlaceableNode implements SortChangeListener, Obj
     private final NewObjectDiagramView fParent;
     private final MObject fObject;
     private final String fLabel;
-    AttributedString fLabelA;
+    protected AttributedString fLabelA;
     
     private List<MAttribute> fAttributes;
     private final String[] fValues;
     
     private List<MStateMachine> fStateMachines;
     private final String[] fStateValues;
+    
+    private boolean fIsGreyed;
     
     protected Rectangle2D.Double nameRect = new Rectangle2D.Double();
     protected Rectangle2D.Double attributesRect = new Rectangle2D.Double();
@@ -77,6 +79,7 @@ public class ObjectNode extends PlaceableNode implements SortChangeListener, Obj
         fObject = obj;
         fParent = parent;
         fOpt = opt;
+        fIsGreyed = false;
         fOptChaneListener = new DiagramOptionChangedListener() {
 			@Override
 			public void optionChanged(String optionname) {
@@ -239,14 +242,23 @@ public class ObjectNode extends PlaceableNode implements SortChangeListener, Obj
         int labelWidth = g.getFontMetrics().stringWidth( fLabel );
 
         if ( isSelected() ) {
-            g.setColor( fOpt.getNODE_SELECTED_COLOR() );
+            g.setColor( fOpt.getNODE_SELECTED_COLOR());
+            g.fill( currentBounds );
+            g.setColor( fOpt.getNODE_FRAME_COLOR() );
+            g.draw( currentBounds );
+        } else if ( isGreyed() ){
+          	g.setColor( fOpt.getNODE_GREYED_COLOR() );
+            g.fill( currentBounds );
+            g.setColor(fOpt.getNODE_GREYED_FRAME_COLOR() );
+            g.draw( currentBounds );
         } else {
             g.setColor( fOpt.getNODE_COLOR() );
-        }
-        g.fill( currentBounds );
-        g.setColor( fOpt.getNODE_FRAME_COLOR() );
-        g.draw( currentBounds );
+            g.fill( currentBounds );
+            g.setColor( fOpt.getNODE_FRAME_COLOR() );
+            g.draw( currentBounds );
 
+        }
+      
         x = (currentBounds.getCenterX() - labelWidth / 2);
         y = (int)currentBounds.getY() + g.getFontMetrics().getAscent() + 2;
         
@@ -278,7 +290,7 @@ public class ObjectNode extends PlaceableNode implements SortChangeListener, Obj
         }
     }
 
-    public String ident() {
+   	public String ident() {
         return "Object." + fObject.name();
     }
     public String identNodeEdge() {
@@ -300,4 +312,14 @@ public class ObjectNode extends PlaceableNode implements SortChangeListener, Obj
 		super.dispose();
 		this.fOpt.removeOptionChangedListener(fOptChaneListener);
 	}
+
+	public boolean isGreyed() {
+		return fIsGreyed;
+	}
+    
+    public void setGreyed(boolean b) {
+		fIsGreyed = b;
+	}
+    
+
 }

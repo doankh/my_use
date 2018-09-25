@@ -40,22 +40,21 @@ import org.tzi.use.util.StringUtil;
 
 /**
  * A visitor for producing a sequence of commands for generating the
- * current model as an instance of the UML metamodel. The output can
+ * current model as an instance of the UML meta model. The output can
  * be used as input commands for USE in combination with the
- * specification of the UML metamodel.
+ * specification of the UML meta model.
  *
  * @version     $ProjectVersion: 0.393 $
- * @author      Hoang Doan 
+ * @author      HoangDoan 
  */
-public class MMInstanceGenerator implements MMVisitor {
-    private MSystem fSystem;
+public class MMInstanceGenerator implements MMVisitor {    
     private LinkedList<String> soilCommands = new LinkedList<String>();
     private Set<Type> fDataTypes;
     private boolean fPass1;
 //    private String fModelId;
 
     public MMInstanceGenerator(MSystem system) {
-        fSystem = system;
+        
         fDataTypes = new HashSet<Type>();
     }
 
@@ -144,12 +143,12 @@ public class MMInstanceGenerator implements MMVisitor {
         	soilCommands.add("set " + id + ".upper := " + e.multiplicity().getRanges().get(0).getUpper());
         
         // add AssociationEnd_Association links
-        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
-                     ") into A_Association_Association_Property_MemberEnd");
+//        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
+//                     ") into A_Association_Association_Property_MemberEnd");
         soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
                 ") into C_Association_OwningAssociation_Property_OwnedEnd");
-        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
-                ") into A_Association_Association_Property_NavigableOwnedEnd");
+//        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
+//                ") into A_Association_Association_Property_NavigableOwnedEnd");
         //add TypedElement(Property)_Type(Class) link
         soilCommands.add("insert (" + id + "," + e.cls() + "Class" + 
                 ") into A_TypedElement_TypedElement_Type_Type");
@@ -228,17 +227,23 @@ public class MMInstanceGenerator implements MMVisitor {
     }
 
     public void visitGeneralization(MGeneralization e) {
-    	
-		String id = e.name();
-	    soilCommands.add("create " + id + " : " + "Generalization");
-       //add A_Classifier_General_Generalization_Generalization between the general class and the generalization instance
-	    soilCommands.add("insert ("+ e.parent().name() + "Class" + "," + id +") into A_Classifier_General_Generalization_Generalization");
-       //add C_Classifier_Specific_Generalization_Generalization between the subclass and the generalization instance 
-	    soilCommands.add("insert ("+ e.child().name() + "Class" + "," + id +") into C_Classifier_Specific_Generalization_Generalization");
-       
-        // add A_Class_Class_Class_SuperClass association between superclass and subclass
-        soilCommands.add("insert (" + e.child().name() + "Class, " +
-                     e.parent().name() + "Class) into A_Class_Class_Class_SuperClass");
+    	//FIXME: generalization of other elements, e.g., associations
+    	//if it is the generalization between class - class 
+    	if(e.parent().model().getClass(e.parent().name()) != null && e.child().model().getClass(e.child().name()) != null)
+    	{
+	    	String id = e.name();
+		    soilCommands.add("create " + id + " : " + "Generalization");
+	    	//add A_Classifier_General_Generalization_Generalization between the general class and the generalization instance
+	    	soilCommands.add("insert ("+ e.parent().name() + "Class" + "," + id +") into A_Classifier_General_Generalization_Generalization");
+	    	//add C_Classifier_Specific_Generalization_Generalization between the subclass and the generalization instance 
+	    	soilCommands.add("insert ("+ e.child().name() + "Class" + "," + id +") into C_Classifier_Specific_Generalization_Generalization");
+	       
+	        // add A_Class_Class_Class_SuperClass association between superclass and subclass
+	    	//Create a link of the superclass-subclass association if it is a generalization between two classes
+	    	
+	    		soilCommands.add("insert (" + e.child().name() + "Class, " +
+	                     e.parent().name() + "Class) into A_Class_Class_Class_SuperClass");
+    	}
         
     }
 
@@ -381,7 +386,7 @@ public class MMInstanceGenerator implements MMVisitor {
 	            s = "DataType";
 	        else 
 	            s = "Class";
-	        soilCommands.add("insert (" + id +  ", " + e.type() + s +
+	        soilCommands.add("insert (" + id +  ", " + t + s +
 	                ") into A_TypedElement_TypedElement_Type_Type");
         }
 	}
@@ -409,9 +414,7 @@ public class MMInstanceGenerator implements MMVisitor {
 	//if t is a CollectionType -> return the type of its element
 	//if t is a TupleType -> return type of all its parts
 	//otherwise return t
-	@SuppressWarnings("unchecked")
 	private Set<Type> getInstantiationDatatype(Type t){
-		//Set<Type> t1 = new HashSet<Type>();
 		if(!(t instanceof CollectionType) && !(t instanceof TupleType))
 			return new HashSet<>(Arrays.asList(t));
 		else

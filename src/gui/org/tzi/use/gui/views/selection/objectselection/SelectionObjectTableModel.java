@@ -9,6 +9,7 @@ import java.util.TreeSet;
 
 import javax.swing.table.AbstractTableModel;
 
+import org.tzi.use.gui.util.AlphanumComparator;
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.sys.MObject;
 import org.tzi.use.uml.sys.MSystem;
@@ -101,12 +102,12 @@ public class SelectionObjectTableModel extends AbstractTableModel {
 		if (fClass != null) {		
 			MSystemState state = fSystem.state();
 			Set<MObject> objects = state.objectsOfClass(fClass);
-			TreeSet<MObject> sortedObjects = new TreeSet<MObject>(new Comparator<MObject>() {
-				@Override
-				public int compare(MObject o1, MObject o2) {
-					return o1.name().compareTo(o2.name());
-				}
-			});
+			
+			
+			
+			TreeSet<MObject> sortedObjects = new TreeSet<MObject>(Comparator
+					.comparing((MObject obj) -> obj.name() , new AlphanumComparator()));
+			
 			sortedObjects.addAll(objects);
 			
 			for (MObject o : sortedObjects) {

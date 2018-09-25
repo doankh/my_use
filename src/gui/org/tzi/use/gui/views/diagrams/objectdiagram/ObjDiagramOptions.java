@@ -34,6 +34,9 @@ import org.w3c.dom.Element;
  */
 public final class ObjDiagramOptions extends DiagramOptions {    
     
+	private static final String NODE_GREYED_COLOR = "NODE_GREYED_COLOR";
+	private static final String NODE_GREYED_FRAME_COLOR = "NODE_GREYED_FRAME_COLOR";
+	
 	private boolean isShowStates = false;
 
 	public ObjDiagramOptions() {
@@ -58,6 +61,8 @@ public final class ObjDiagramOptions extends DiagramOptions {
     	registerTypeColor(EDGE_COLOR, Color.RED, Color.BLACK);
     	registerTypeColor(EDGE_LABEL_COLOR, Color.DARK_GRAY, Color.BLACK);
     	registerTypeColor(EDGE_SELECTED_COLOR, Color.ORANGE, new Color(0x50, 0x50, 0x50));
+    	registerTypeColor(NODE_GREYED_COLOR, new Color(249, 249, 249), Color.WHITE);
+    	registerTypeColor(NODE_GREYED_FRAME_COLOR, new Color(189, 189, 191), Color.WHITE); 	
 	}
 	
     public boolean isShowMutliplicities() { return false; }
@@ -88,5 +93,13 @@ public final class ObjDiagramOptions extends DiagramOptions {
 	public void loadOptions(PersistHelper helper, int version) {
 		super.loadOptions(helper, version);
 		this.isShowStates = helper.getElementBooleanValue("ShowStates");
+	}
+
+	public Color getNODE_GREYED_COLOR() {
+	 	return getColor("NODE_GREYED_COLOR");    
+	}
+
+	public Color getNODE_GREYED_FRAME_COLOR() {
+	 	return getColor("NODE_GREYED_FRAME_COLOR");
 	}
 }

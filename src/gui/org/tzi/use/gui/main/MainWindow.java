@@ -112,6 +112,7 @@ import org.tzi.use.gui.views.diagrams.behavior.sequencediagram.SDScrollPane;
 import org.tzi.use.gui.views.diagrams.behavior.sequencediagram.SequenceDiagramView;
 import org.tzi.use.gui.views.diagrams.classdiagram.ClassDiagramView;
 import org.tzi.use.gui.views.diagrams.classdiagram.MClassDiagramView;
+import org.tzi.use.gui.views.diagrams.objectdiagram.NewMetaObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.statemachine.StateMachineDiagramView;
 import org.tzi.use.main.ChangeEvent;
@@ -1949,15 +1950,14 @@ public class MainWindow extends JFrame {
 
         @Override
 		public void actionPerformed(ActionEvent e) {
-        	MSystem system;
-        	if(isMetamodel)
-        	{
-        		system = fSession.metaSystem();
-        		//generateMetaObjects();
-        	}
+        	//MSystem system;
+        	NewObjectDiagramView odv;
+    		//system = isMetamodel? fSession.metaSystem():fSession.system();
+    		//generateMetaObjects();
+        	if(!isMetamodel)
+        		odv = new NewObjectDiagramView(MainWindow.this, fSession.system());
         	else
-        		system = fSession.system();
-            NewObjectDiagramView odv = new NewObjectDiagramView(MainWindow.this, system);
+        		odv = new NewMetaObjectDiagramView(MainWindow.this, fSession.metaSystem());
             ViewFrame f = new ViewFrame(!isMetamodel?"Object diagram":"Meta Object Diagram", odv, "ObjectDiagram.gif");
             
             // give some help information
