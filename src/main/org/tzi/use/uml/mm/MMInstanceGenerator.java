@@ -91,10 +91,10 @@ public class MMInstanceGenerator implements MMVisitor {
     //------------------
     public void visitAssociationClass( MAssociationClass e ) {
         // prints information about associationclass
-        if ( !fPass1 ) {
+        if ( fPass1 ) {
             String id = genInstance( e, "AssociationClass" );
-            soilCommands.add("set " + id + ".isAbstract = " + e.isAbstract());
-            soilCommands.add("set " + id + ".isDerived = " + e.isDerived());
+            soilCommands.add("set " + id + ".isAbstract := " + e.isAbstract());
+            soilCommands.add("set " + id + ".isDerived := " + e.isDerived());
         }
 
         // visit attributes
@@ -107,8 +107,9 @@ public class MMInstanceGenerator implements MMVisitor {
         	opc.processWithVisitor(this);
         }
         // visit association ends
-        for (MAssociationEnd assocEnd : e.associationEnds()) {
-            assocEnd.processWithVisitor( this );
+        if ( !fPass1 )
+        	for (MAssociationEnd assocEnd : e.associationEnds()) {
+        		assocEnd.processWithVisitor( this );
         }
 
     }
@@ -145,12 +146,13 @@ public class MMInstanceGenerator implements MMVisitor {
         // add AssociationEnd_Association links
 //        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
 //                     ") into A_Association_Association_Property_MemberEnd");
-        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
+        boolean isEndofAssoClass = (e.association() instanceof MAssociationClass);
+        soilCommands.add("insert (" + e.association().name() + (isEndofAssoClass? "AssociationClass, " : "Association, ") + id + 
                 ") into C_Association_OwningAssociation_Property_OwnedEnd");
 //        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
 //                ") into A_Association_Association_Property_NavigableOwnedEnd");
         //add TypedElement(Property)_Type(Class) link
-        soilCommands.add("insert (" + id + "," + e.cls() + "Class" + 
+        soilCommands.add("insert (" + id + "," + e.cls() + (e.cls() instanceof MAssociationClass? "AssociationClass" : "Class") + 
                 ") into A_TypedElement_TypedElement_Type_Type");
     }
 
@@ -168,8 +170,10 @@ public class MMInstanceGenerator implements MMVisitor {
         soilCommands.add( "set " + id + ".isReadOnly := false" );
         //fOut.println( "!set " + id + ".isID := false" );
 
+        boolean isAttrofAssoClass = e.owner().model().getAssociationClass(e.owner().name()) != null;
+        
         // add Class_Property link
-        soilCommands.add("insert (" + e.owner().name() + "Class, " + 
+        soilCommands.add("insert (" + e.owner().name() + (isAttrofAssoClass? "AssociationClass, " : "Class, ") + 
                      id + ") into C_Class_Class_Property_OwnedAttribute");
         
         // add Property_Datatype link for type of attribute
@@ -188,7 +192,7 @@ public class MMInstanceGenerator implements MMVisitor {
     public void visitClass(MClass e) {
         //Generate class instances first and attributes and operations later, because a class might be
     	//the type of an attribute or the return type of an operation
-    	if (fPass1 ) {
+    	if (fPass1) {
             String id = genInstance(e, "Class");
             
             soilCommands.add("set " + id + ".isAbstract := " + e.isAbstract());
@@ -256,12 +260,15 @@ public class MMInstanceGenerator implements MMVisitor {
     	soilCommands.add("create ModelMetrics : " + "ModelMetrics");
         fPass1 = true;
 
-        // visit classes in first pass only to gather required
+        // visit classes/associationclasses in first pass only to gather required
         // DataTypes
         for (MClass cls : e.classes()) {
             cls.processWithVisitor(this);
         }
 
+        for (MAssociationClass cls : e.getAssociationClassesOnly()) {
+            cls.processWithVisitor(this);
+        }
         // create all DataTypes that are required later
         /*fOut.println("-- DataTypes");*/
         

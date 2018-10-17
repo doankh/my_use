@@ -108,7 +108,7 @@ public class MClassDiagramView extends ClassDiagramView{
 	        		this.fClassDiagram.hideClass(cls);
 	        }
 	        
-	        //Hide unneeded associations
+	        //Hide unnecessary associations
 	        Collection<MAssociation> allMetaAssociations = mModel.associations();
 	        for(MAssociation ass : allMetaAssociations)
 	        {

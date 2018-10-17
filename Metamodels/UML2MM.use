@@ -1,4 +1,4 @@
-model UML23_MetaModel
+model UML24_MetaModel
 
 enum VisibilityKind {
   public,
