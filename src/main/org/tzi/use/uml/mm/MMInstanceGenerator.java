@@ -35,7 +35,6 @@ import org.tzi.use.uml.ocl.type.EnumType;
 import org.tzi.use.uml.ocl.type.TupleType;
 import org.tzi.use.uml.ocl.type.TupleType.Part;
 import org.tzi.use.uml.ocl.type.Type;
-import org.tzi.use.uml.sys.MSystem;
 import org.tzi.use.util.StringUtil;
 
 /**
@@ -53,7 +52,7 @@ public class MMInstanceGenerator implements MMVisitor {
     private boolean fPass1;
 //    private String fModelId;
 
-    public MMInstanceGenerator(MSystem system) {
+    public MMInstanceGenerator() {
         
         fDataTypes = new HashSet<Type>();
     }
@@ -65,13 +64,19 @@ public class MMInstanceGenerator implements MMVisitor {
      *
      * @return the name of the new instance 
      */
-    private String genInstance(MModelElement e, String metaClass, String prefix) {
+    public String createInstanceName(MModelElement e, String metaClass, String prefix)
+    {
     	String eName = e.name();
         String qualifiedName = (( prefix != null ) ? prefix + "_" : "") + eName;
 //      fOut.println("-- " + metaClass + " " + qualifiedName);
-        String id = qualifiedName + metaClass;
+        return qualifiedName + metaClass;
+    }
+    
+    private String genInstance(MModelElement e, String metaClass, String prefix) {
+    	
+        String id = createInstanceName(e, metaClass, prefix);
         soilCommands.add("create " + id + " : " + metaClass);
-        soilCommands.add("set " + id + ".name := '" + eName + "'");
+        soilCommands.add("set " + id + ".name := '" + e.name() + "'");
         return id;
     }
 
@@ -82,10 +87,14 @@ public class MMInstanceGenerator implements MMVisitor {
     public void visitAssociation(MAssociation e) {
     	String id = genInstance(e, "Association");
         soilCommands.add("set " + id + ".isDerived := " + e.isDerived());
+        for(MClass cls: e.associatedClasses())
+        	soilCommands.add("insert (" + cls.name() + "Class, " + id + 
+                ") into A_Association_Association_Type_EndType");
         // visit association ends
         for (MAssociationEnd assocEnd : e.associationEnds()) {
             assocEnd.processWithVisitor(this);
         }
+        
     }
     
     //------------------
@@ -143,10 +152,13 @@ public class MMInstanceGenerator implements MMVisitor {
         if(e.multiplicity().getRanges().size()>0)
         	soilCommands.add("set " + id + ".upper := " + e.multiplicity().getRanges().get(0).getUpper());
         
-        // add AssociationEnd_Association links
-//        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
-//                     ") into A_Association_Association_Property_MemberEnd");
+        
         boolean isEndofAssoClass = (e.association() instanceof MAssociationClass);
+        // add AssociationEnd_Association links
+        soilCommands.add("insert (" + e.association().name() + (isEndofAssoClass? "AssociationClass, " : "Association, ") + id + 
+                     ") into A_Association_Association_Property_MemberEnd");
+        
+        
         soilCommands.add("insert (" + e.association().name() + (isEndofAssoClass? "AssociationClass, " : "Association, ") + id + 
                 ") into C_Association_OwningAssociation_Property_OwnedEnd");
 //        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 

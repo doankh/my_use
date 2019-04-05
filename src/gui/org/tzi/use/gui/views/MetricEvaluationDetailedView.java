@@ -29,6 +29,7 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Paths;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -42,13 +43,17 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import org.tzi.use.gui.main.MainWindow;
+import org.tzi.use.gui.views.diagrams.classdiagram.ClassDiagram;
+import org.tzi.use.gui.views.diagrams.classdiagram.ClassDiagramData;
+import org.tzi.use.gui.views.diagrams.classdiagram.ClassDiagramView;
+import org.tzi.use.gui.views.diagrams.classdiagram.ClassNode;
+import org.tzi.use.main.Session;
 import org.tzi.use.parser.ocl.OCLCompiler;
 import org.tzi.use.uml.mm.MMetricEvaluationSetting;
 import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
 import org.tzi.use.uml.ocl.value.Value;
-import org.tzi.use.uml.sys.MSystem;
 
 /**
  * TODO
@@ -71,7 +76,7 @@ class MetricEvaluationDetailedView extends JDialog {
 	/**
 	 * Create the dialog.
 	 */
-	MetricEvaluationDetailedView(final MSystem metaSystem, final MainWindow parent, MMetricEvaluationSetting config) {
+	MetricEvaluationDetailedView(final Session fSession, final MainWindow parent, MMetricEvaluationSetting config) {
 		super(parent, "Metric evaluation detail");
 		
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -104,21 +109,42 @@ class MetricEvaluationDetailedView extends JDialog {
 	        
 	        // compile invariant
 	        Expression expr = OCLCompiler.compileExpression(
-	        		metaSystem.model(),
-	        		metaSystem.state(),
+	        		fSession.metaSystem().model(),
+	        		fSession.metaSystem().state(),
 	        		evaluationInv, 
 	                "Error", 
 	                out, 
-	                metaSystem.varBindings());
+	                fSession.metaSystem().varBindings());
 	        	        
 	        out.flush();
 	        
 	        try {
 	            // evaluate it with current system state
 	            evaluator = new Evaluator(true);
-	            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
+	            Value val = evaluator.eval(expr, fSession.metaSystem().state(), fSession.metaSystem().varBindings());
 	            // print result
-	            fTextOut.setText(val.toStringWithType());
+	            String result = val.toStringWithType();
+	            fTextOut.setText(result);
+	            //highlight the violating classes on the class diagram by setting it selected
+	            if(val.isSet()) 
+	            {
+	            	String[] classMetaObectsNames = val.toString().substring(4, val.toString().length()-1).split(",");
+	            	String className;
+	            	//get list of current class diagram views
+	            	List<ClassDiagramView> cdviews = MainWindow.instance().getClassDiagrams();
+	            	for(ClassDiagramView cdview : cdviews) {
+	            		ClassDiagram cd = cdview.getClassDiagram();
+	            		//deselect all elements in the class diagram
+	            		cd.deSelectAllElement();
+	            		for(int i=0; i<classMetaObectsNames.length;i++) {
+	            			className =classMetaObectsNames[i].substring(0,classMetaObectsNames[i].length()-5);
+							ClassNode n = ((ClassDiagramData)cd.getVisibleData()).fClassToNodeMap.get(fSession.system().model().getClass(className));
+							if(n != null) cd.getNodeSelection().add(n);
+						}
+	            		cd.invalidateContent(true);
+					}
+	            	
+	            }
 	        } catch (MultiplicityViolationException e) {
 	        } 
         } catch(IOException ex){}

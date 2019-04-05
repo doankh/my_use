@@ -41,6 +41,7 @@ import java.util.Stack;
 import org.tzi.use.config.Options;
 import org.tzi.use.gen.tool.GGenerator;
 import org.tzi.use.parser.generator.ASSLCompiler;
+import org.tzi.use.parser.shell.ShellCommandCompiler;
 import org.tzi.use.uml.mm.MAssociation;
 import org.tzi.use.uml.mm.MAssociationClass;
 import org.tzi.use.uml.mm.MAttribute;
@@ -109,6 +110,11 @@ import com.google.common.eventbus.EventBus;
  * @author Lars Hamann
  * @author Frank Hilken
  * @author Mark Richters
+ */
+/**
+ * TODO
+ * @author Khanh-Hoang Doan
+ *
  */
 public final class MSystem {
 	/** The model of this system. */
@@ -1264,6 +1270,36 @@ public final class MSystem {
 		fVariableEnvironment.assign(variableName, value);
 	}
 
+	
+	/**
+	 * translate a soil command to a statement that can be executed within the current system state
+	 * @param line: soil command
+	 * @return
+	 */
+	private MStatement translateSoilCommandtoStatement(String line)
+    {
+    	MStatement statement = ShellCommandCompiler.compileShellCommand(
+				this.model(),
+				this.state(),
+				this.getVariableEnvironment(),
+				line,
+				"<input>",
+				new PrintWriter(System.err),
+				false);
+
+    	return statement;
+    }
+	
+	public StatementEvaluationResult execute(String soilCommand){
+		MStatement statement = translateSoilCommandtoStatement(soilCommand);
+		try {
+			return execute(statement);
+		} catch (MSystemException e) {
+			// TODO Auto-generated catch block
+			return null;
+		}
+	}
+	
 	/**
 	 * Executes a statement using the current system state and stores the result
 	 * on the undo stack. If the execution fails, the effects of the statement
@@ -1275,6 +1311,8 @@ public final class MSystem {
 	public StatementEvaluationResult execute(MStatement statement) throws MSystemException {
 		return execute(statement, true, true, true);
 	}
+	
+	
 
 	/**
 	 * Executes a statement using the current system state and stores the result

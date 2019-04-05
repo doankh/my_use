@@ -121,7 +121,6 @@ import org.tzi.use.main.Session;
 import org.tzi.use.main.Session.EvaluatedStatement;
 import org.tzi.use.main.runtime.IRuntime;
 import org.tzi.use.main.shell.Shell;
-import org.tzi.use.parser.shell.ShellCommandCompiler;
 import org.tzi.use.parser.use.USECompiler;
 import org.tzi.use.runtime.gui.impl.PluginActionProxy;
 import org.tzi.use.uml.mm.MClass;
@@ -133,6 +132,7 @@ import org.tzi.use.uml.mm.statemachines.MStateMachine;
 import org.tzi.use.uml.sys.MObject;
 import org.tzi.use.uml.sys.MSystem;
 import org.tzi.use.uml.sys.MSystemException;
+import org.tzi.use.uml.sys.SSInstanceGenerator;
 import org.tzi.use.uml.sys.events.StatementExecutedEvent;
 import org.tzi.use.uml.sys.events.tags.SystemStateChangedEvent;
 import org.tzi.use.uml.sys.events.tags.SystemStructureChangedEvent;
@@ -403,6 +403,7 @@ public class MainWindow extends JFrame {
         
         menu.add(fActionDetermineStates);
         menu.add(fActionCheckStateInvariants);
+        menu.add(fActionGenerateMetaInstances);
         
         menu.add(new JSeparator());
         mi = menu.add(fActionStateReset);
@@ -1057,6 +1058,9 @@ public class MainWindow extends JFrame {
 
     private final ActionDetermineStates fActionDetermineStates = new ActionDetermineStates();
     
+    //Generate meta instances of elements in a systemstate
+    private final ActionGenerateMetaInstances fActionGenerateMetaInstances = new ActionGenerateMetaInstances();
+    
     private final ActionCheckStateInvariants fActionCheckStateInvariants = new ActionCheckStateInvariants();
     
     private final ActionStateReset fActionStateReset = new ActionStateReset();
@@ -1189,9 +1193,9 @@ public class MainWindow extends JFrame {
             	// create system
             	system = new MSystem(model);
             	metaSystem = new MSystem(mmodel);
-            	//auto generate meta-instance and add it in to metaSystem
+            	//auto generate meta-instance and add it into metaSystem
             	
-            	generateMetaObjects(system, metaSystem);
+            	generateMetaInstances(system, metaSystem);
             } else {
             	system = null;
             	metaSystem = null;
@@ -1239,38 +1243,31 @@ public class MainWindow extends JFrame {
     	 * @author Doan Hoang
     	 */
         
-    	private void generateMetaObjects(MSystem system,MSystem metaSystem) {	
+    	private void generateMetaInstances(MSystem system,MSystem metaSystem) {	
 
-    		MMInstanceGenerator v = new MMInstanceGenerator(metaSystem);
+    		MMInstanceGenerator v = new MMInstanceGenerator();
     		system.model().processWithVisitor(v);
     		LinkedList<String> genSoilCommands = v.getGeneratedShellCommands();	
     		
     		for (int i = 0; i < genSoilCommands.size(); i++)
-    		{
-    			try {
-    				metaSystem.execute(translateSoilCommandtoStatement(metaSystem,genSoilCommands.get(i)));
-    			} catch (MSystemException e1) {
-    				// TODO Auto-generated catch block
-    				e1.printStackTrace();
-    			}
-    		}
+				metaSystem.execute(genSoilCommands.get(i));
         }
     	/*
          * Translate a soilcommand to a statement which can be executed from code
          */
-        private MStatement translateSoilCommandtoStatement(MSystem fSystem, String line)
-        {
-        	MStatement statement = ShellCommandCompiler.compileShellCommand(
-    				fSystem.model(),
-    				fSystem.state(),
-    				fSystem.getVariableEnvironment(),
-    				line,
-    				"<input>",
-    				new PrintWriter(System.err),
-    				false);
-
-        	return statement;
-        }
+//        private MStatement translateSoilCommandtoStatement(MSystem fSystem, String line)
+//        {
+//        	MStatement statement = ShellCommandCompiler.compileShellCommand(
+//    				fSystem.model(),
+//    				fSystem.state(),
+//    				fSystem.getVariableEnvironment(),
+//    				line,
+//    				"<input>",
+//    				new PrintWriter(System.err),
+//    				false);
+//
+//        	return statement;
+//        }
     }
 
     private class ActionFileOpenSpecRecent extends ActionFileOpenSpec {
@@ -1705,7 +1702,7 @@ public class MainWindow extends JFrame {
 
         @Override
 		public void actionPerformed(ActionEvent e) {
-            ModelMetricsEvaluation civ = new ModelMetricsEvaluation(MainWindow.this, fSession.metaSystem());
+            ModelMetricsEvaluation civ = new ModelMetricsEvaluation(MainWindow.this, fSession);
             ViewFrame f = new ViewFrame("Model Metrics Evaluation", civ, "InvariantView.gif");
             JComponent c = (JComponent) f.getContentPane();
             c.setLayout(new BorderLayout());
@@ -1747,6 +1744,46 @@ public class MainWindow extends JFrame {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			fSession.system().determineStates(fLogWriter);
+		}
+	}
+    
+    private class ActionGenerateMetaInstances extends AbstractAction {
+    	ActionGenerateMetaInstances() {
+			super("Generate Meta-Instances");
+		}
+    	
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			metaInstanceGeneration();
+		}
+		private void deleteMetaInstances(){
+			Set<String> metaClasseNames = new HashSet<String>(Arrays.asList("InstanceSpecification", "InstanceValue",
+					"Slot", "LiteralInteger", "LiteralReal", "LiteralBoolean", "LiteralString"));
+			Set<MObject> metaObjectperClass = new HashSet<MObject>();
+			
+			for(String metaClassName: metaClasseNames){
+				MClass metaClass =  fSession.metaSystem().model().getClass(metaClassName);
+				if(metaClass != null)
+				{
+					metaObjectperClass = fSession.metaSystem().state().objectsOfClass(metaClass);
+					for(MObject obj: metaObjectperClass)
+						fSession.metaSystem().state().deleteObject(obj);
+				}
+			}
+		}
+		
+		private void metaInstanceGeneration(){
+			SSInstanceGenerator instanceGenerator = new SSInstanceGenerator(fSession.system().state());
+			//delete meta instances that previously generated before generate meta instances of the current System State
+			deleteMetaInstances();
+			instanceGenerator.visitSystemState();
+			LinkedList<String> genSoilCommands = instanceGenerator.getGeneratedShellCommands();	
+    		
+    		for (int i = 0; i < genSoilCommands.size(); i++)
+    		{
+    			fLogWriter.println(genSoilCommands.get(i));
+    			fSession.metaSystem().execute(genSoilCommands.get(i));
+    		}
 		}
 	}
     
@@ -1953,7 +1990,7 @@ public class MainWindow extends JFrame {
         	//MSystem system;
         	NewObjectDiagramView odv;
     		//system = isMetamodel? fSession.metaSystem():fSession.system();
-    		//generateMetaObjects();
+    		//generateMetaInstances();
         	if(!isMetamodel)
         		odv = new NewObjectDiagramView(MainWindow.this, fSession.system());
         	else

@@ -680,7 +680,7 @@ composition C_MultiplicityElement_OwningLower_ValueSpecification_LowerValue betw
 end
 
 association A_TypedElement_TypedElement_Type_Type between
-  TypedElement[*] role typepElement
+  TypedElement[*] role typedElement
   Type[0..1] role type
 end
 
@@ -839,6 +839,35 @@ class LiteralInteger < LiteralSpecification
 	[2] The query integerValue() gives the value.
 	*/
 	integerValue() : Integer = value
+	
+	/*
+	UML extension
+	*/
+	getValue() : OclAny = self.value
+end
+
+/*
+UML 2.3 p. 92:
+A literal real is a specification of a real value.
+*/
+class LiteralReal < LiteralSpecification
+  attributes
+	/*
+	UML 2.3 p. 92:
+	The specified Real value
+	*/
+    value : Real
+  operations
+	/*
+	UML 2.3 p. 93:
+    [1] The query isComputable() is redefined to be true.
+	*/
+	isComputable() : Boolean = true
+	/*
+	UML 2.3 p. 93:
+	[2] The query realValue() gives the value.
+	*/
+	realValue() : Real = value
 	
 	/*
 	UML extension
@@ -1020,7 +1049,7 @@ composition C_Slot_OwningSlot_ValueSpecification_Value between
 end
 
 association A_Slot_Slot_StructuralFeature_DefiningFeature between
-  Slot[*] role notNavigableDefiningFeature
+  Slot[*] role slot
   StructuralFeature[1] role definingFeature
 end
 
@@ -1030,8 +1059,8 @@ composition C_InstanceSpecification_OwningInstanceSpec_ValueSpecification_Specif
 end
 
 association A_InstanceSpecification_InstanceSpecification_Classifier_Classifier between
+  InstanceSpecification[*] role instance
   Classifier[*] role classifier
-  InstanceSpecification[*] role notNavigableClassifier
 end
 --------------------------------------------------------------------------------------------------------
 -- End Fig. 7.8

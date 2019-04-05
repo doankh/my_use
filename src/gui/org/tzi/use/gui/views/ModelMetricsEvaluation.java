@@ -49,6 +49,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import org.tzi.use.config.Options;
 import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.gui.util.ExtFileFilter;
+import org.tzi.use.main.Session;
 import org.tzi.use.parser.ocl.OCLCompiler;
 import org.tzi.use.uml.mm.MMetricEvaluationSetting;
 import org.tzi.use.uml.ocl.expr.Evaluator;
@@ -64,7 +65,7 @@ import org.tzi.use.uml.sys.MSystem;
  */
 public class ModelMetricsEvaluation extends JPanel implements View{
 	
-	private MSystem mSystem;
+	private MSystem metaSystem;
 	private Evaluator evaluator;
 	private JTable tblMetricsEvaluation;
 	MetricsEvaluationTableModel tableModel = new MetricsEvaluationTableModel();
@@ -73,9 +74,9 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 	 * Create the panel.
 	 */
 	
-	public ModelMetricsEvaluation(final MainWindow parent, final MSystem metaSystem) {
+	public ModelMetricsEvaluation(final MainWindow parent, final Session fSession) {
 		
-		mSystem = metaSystem;
+		metaSystem = fSession.metaSystem();
 		setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 		
 		JButton btnLoadConfigFile = new JButton("Load the Setting");
@@ -167,7 +168,7 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 				String scope = tblMetricsEvaluation.getModel().getValueAt(row, 0).toString();
 				if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2 && row >= 0 && scope.equals("Class") && value.equals("false")){
 					MetricEvaluationDetailedView dlg = 
-							new MetricEvaluationDetailedView(mSystem, parent, tableModel.getDataItem(row));
+							new MetricEvaluationDetailedView(fSession, parent, tableModel.getDataItem(row));
 		            dlg.setVisible(true);
 				}
 			}

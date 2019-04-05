@@ -176,4 +176,8 @@ public class ClassDiagramView extends JPanel
 	public float getContentWidth() {
 		return fClassDiagram.getPreferredSize().width;
 	}
+	public ClassDiagram getClassDiagram()
+	{
+		return fClassDiagram;
+	}
 }

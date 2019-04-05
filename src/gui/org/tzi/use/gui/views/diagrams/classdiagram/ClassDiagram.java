@@ -1667,4 +1667,14 @@ public class ClassDiagram extends DiagramView
 			n.stateChanged(e);
 		}
 	}
+	
+	public void deSelectAllElement(){
+		Iterator itr = this.getNodeSelection().iterator();
+		while(itr.hasNext())
+		{
+			PlaceableNode node = (PlaceableNode) itr.next();
+			this.getNodeSelection().remove(node);
+		}
+	}
 }
+
