@@ -19,7 +19,7 @@
 
 // $Id$
 
-package org.tzi.use.gui.views;
+package org.tzi.use.gui.views.qualityassessment;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

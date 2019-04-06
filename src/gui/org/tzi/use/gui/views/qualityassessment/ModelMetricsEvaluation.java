@@ -19,10 +19,11 @@
 
 // $Id$
 
-package org.tzi.use.gui.views;
+package org.tzi.use.gui.views.qualityassessment;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -49,6 +50,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import org.tzi.use.config.Options;
 import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.gui.util.ExtFileFilter;
+import org.tzi.use.gui.views.View;
 import org.tzi.use.main.Session;
 import org.tzi.use.parser.ocl.OCLCompiler;
 import org.tzi.use.uml.mm.MMetricEvaluationSetting;
@@ -77,7 +79,8 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 	public ModelMetricsEvaluation(final MainWindow parent, final Session fSession) {
 		
 		metaSystem = fSession.metaSystem();
-		setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+		setLayout(new BorderLayout());
+		
 		
 		JButton btnLoadConfigFile = new JButton("Load the Setting");
 		btnLoadConfigFile.addActionListener(new ActionListener() {
@@ -184,9 +187,13 @@ public class ModelMetricsEvaluation extends JPanel implements View{
                                         JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                                         JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setPreferredSize(new Dimension(350, 200));
-		add(scrollPane);
-
-		add(btnLoadConfigFile);
+		
+		add(scrollPane, BorderLayout.CENTER);
+		JPanel bottomPanel = new JPanel(new BorderLayout());
+		
+		bottomPanel.add(btnLoadConfigFile,BorderLayout.EAST);
+		btnLoadConfigFile.setBackground(Color.WHITE);
+		add(bottomPanel, BorderLayout.SOUTH);
 
 	}
 	
