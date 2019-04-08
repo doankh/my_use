@@ -186,7 +186,7 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 		JScrollPane scrollPane = new JScrollPane(tblMetricsEvaluation, 
                                         JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                                         JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		scrollPane.setPreferredSize(new Dimension(350, 200));
+		scrollPane.setPreferredSize(new Dimension(500, 500));
 		
 		add(scrollPane, BorderLayout.CENTER);
 		JPanel bottomPanel = new JPanel(new BorderLayout());
@@ -210,7 +210,7 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 @SuppressWarnings("serial")
 class MetricsEvaluationTableModel extends AbstractTableModel {
     private List<MMetricEvaluationSetting> list = new ArrayList<MMetricEvaluationSetting>();
-	private final String[] columnNames = { "Scope", "Metric", "Min Value", "Max Value", "Satisfied" };
+	private final String[] columnNames = { "Scope", "Metric", "Min Value", "Max Value", "Satisfiability" };
     private final int[] columnWidths =   {  80,         80,       50,         50,          80};
 
     public void setList(List<MMetricEvaluationSetting> data) {

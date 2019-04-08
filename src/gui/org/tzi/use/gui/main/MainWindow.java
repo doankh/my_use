@@ -115,6 +115,7 @@ import org.tzi.use.gui.views.diagrams.objectdiagram.NewMetaObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.statemachine.StateMachineDiagramView;
 import org.tzi.use.gui.views.qualityassessment.ModelMetricsEvaluation;
+import org.tzi.use.gui.views.qualityassessment.QualityPropertiesEval;
 import org.tzi.use.main.ChangeEvent;
 import org.tzi.use.main.ChangeListener;
 import org.tzi.use.main.Session;
@@ -475,6 +476,8 @@ public class MainWindow extends JFrame {
         
         mi = menu.add(fActionMetricsEvaluation);
 
+        mi = menu.add(fActionPopertiesEvaluation);
+        
         // create the browser panel
 		fModelBrowser = new ModelBrowser(this, fPluginRuntime);
 
@@ -1079,6 +1082,8 @@ public class MainWindow extends JFrame {
     private final ActionViewCreateObjectDiagram fActionGenerateMetamodelObjectDiagram = new ActionViewCreateObjectDiagram(true);
     
     private final ActionMetricsEvaluation fActionMetricsEvaluation = new ActionMetricsEvaluation();
+    
+    private final ActionQualityPropertiesEvaluation fActionPopertiesEvaluation = new ActionQualityPropertiesEvaluation();
     
     //**End: Meta model menu
 
@@ -1694,7 +1699,9 @@ public class MainWindow extends JFrame {
             dlg.setVisible(true);
         }
     }
-
+    /*
+     * Opens a new window for metrics evaluation
+     */
     private class ActionMetricsEvaluation extends AbstractAction {
     	ActionMetricsEvaluation() {
             super("Model Metrics Evaluation", getIcon("metric_evaluation.png"));
@@ -1704,6 +1711,22 @@ public class MainWindow extends JFrame {
 		public void actionPerformed(ActionEvent e) {
             ModelMetricsEvaluation civ = new ModelMetricsEvaluation(MainWindow.this, fSession);
             ViewFrame f = new ViewFrame("Model Metrics Evaluation", civ, "InvariantView.gif");
+            JComponent c = (JComponent) f.getContentPane();
+            c.setLayout(new BorderLayout());
+            c.add(civ, BorderLayout.CENTER);
+            addNewViewFrame(f);
+        }
+    }
+    
+    private class ActionQualityPropertiesEvaluation extends AbstractAction{
+    	ActionQualityPropertiesEvaluation() {
+            super("Quality Properties Evaluation", getIcon("propertylist.png"));
+        }
+
+        @Override
+		public void actionPerformed(ActionEvent e) {
+        	QualityPropertiesEval civ = new QualityPropertiesEval(MainWindow.this, fSession);
+            ViewFrame f = new ViewFrame("Quality Properties Evaluation", civ, "InvariantView.gif");
             JComponent c = (JComponent) f.getContentPane();
             c.setLayout(new BorderLayout());
             c.add(civ, BorderLayout.CENTER);
