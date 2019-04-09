@@ -65,7 +65,7 @@ import org.tzi.use.uml.sys.MSystem;
  * @author KHANHHOANG
  *
  */
-public class ModelMetricsEvaluation extends JPanel implements View{
+public class MetricsEvaluation extends JPanel implements View{
 	
 	private MSystem metaSystem;
 	private Evaluator evaluator;
@@ -76,7 +76,7 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 	 * Create the panel.
 	 */
 	
-	public ModelMetricsEvaluation(final MainWindow parent, final Session fSession) {
+	public MetricsEvaluation(final MainWindow parent, final Session fSession) {
 		
 		metaSystem = fSession.metaSystem();
 		setLayout(new BorderLayout());
@@ -95,7 +95,7 @@ public class ModelMetricsEvaluation extends JPanel implements View{
 		            fChooser.setFileFilter(filter);
 		            fChooser.setDialogTitle("Open the metric configuration file ...");
 		            		            
-		            int returnVal = fChooser.showOpenDialog(ModelMetricsEvaluation.this);
+		            int returnVal = fChooser.showOpenDialog(MetricsEvaluation.this);
 		            if (returnVal != JFileChooser.APPROVE_OPTION)
 		                return;
 

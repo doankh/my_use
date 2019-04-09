@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><QualityProperty>
+  <Property>
+      <Name>Abstract class has subclass</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|c.isAbstract implies c.subClass-&gt;notEmpty())  
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>No unused class</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|c. metrics. CBO() &gt;0 or c. metrics. NOC()&gt;0)  
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>No data class</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|c. metrics. NOM()&gt;0)  
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Subclass of a concrete class is a concrete class</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        not Generalization.allInstances()-&gt;exists(g|g.specific.isAbstract and not g.general.isAbstract)  
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>No isolated class</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;select(c | c.association-&gt; isEmpty() and c.superClass-&gt;isEmpty() and c.subClass-&gt;isEmpty())-&gt;isEmpty()  
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>No duplicate attributes among all subclasses</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|not c.subClass-&gt;collect(ownedAttribute)-&gt;exists(a1,a2|a1&lt;&gt;a2 and a1.name = a2.name and a1.type = a2.type))
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>No composition cycles</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(
+      c|(c.association.memberEnd-&gt;select(e|e.type&lt;&gt;c and e.isComposite).type-&gt;closure(c1|c1.association.memberEnd-&gt;select(e|e.type&lt;&gt;c1 and e.isComposite).type))-&gt;excludes(c))
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>No composite end is a super class</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|
+      c.association.memberEnd-&gt;select(e|e.type&lt;&gt;c and e.isComposite).type
+	-&gt;forAll(c1|c.superClass-&gt;excludes(c1)))
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Abstract class has more than one subclass</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|c.isAbstract implies c.subClass-&gt; size()&gt;1)
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>No redundant generalization paths</Name>
+      <Type>Design</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|
+    let indirectAncestors = c.superClass.superClass
+           -&gt;closure(superClass)
+    in indirectAncestors.subClass-&gt;excludes(c))
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Long Parameter List</Name>
+      <Type>Metrics</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;select(c|c. ownedOperation-&gt;exists(op|op. ownedParameterRedefined-&gt;size()&gt;10))-&gt;isEmpty()
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>No overloaded class</Name>
+      <Type>Metrics</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|c. metrics. NOA() &lt;=10)
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Moderate efferent coupling class</Name>
+      <Type>Metrics</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|c. metrics. CBO() &lt;=5)
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Moderate length of  inheritance hierarchy</Name>
+      <Type>Metrics</Type>
+      <OClExpression>
+        ModelMetrics.MaxDIT()&lt;5
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Moderate number of direct children</Name>
+      <Type>Metrics</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|c. metrics. NOC()&lt;=10)
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Class naming camelCase  convention</Name>
+      <Type>Naming convention</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll (c|c.name.substring(1,1).toUpper() = c.name.substring(1,1))
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Attributes are not named after their feature class</Name>
+      <Type>Naming convention</Type>
+      <OClExpression>
+        Class.allInstances()-&gt;forAll(c|not c.ownedAttribute
+        -&gt; exists(a|a.name.substring(1,c.name.size()).toLower() = c.name. toLower()))
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Attribute naming camelCase  convention</Name>
+      <Type>Naming convention</Type>
+      <OClExpression>
+        Property. allInstances()-&gt;forAll (p|p.name.substring(1,1).toLower() = p.name.substring(1,1))
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Operation naming camelCase  convention</Name>
+      <Type>Naming convention</Type>
+      <OClExpression>
+        Operation. allInstances()-&gt;forAll (op|op.name.substring(1,1).toLower() = op.name.substring(1,1))
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Class name is not a Java keyword</Name>
+      <Type>Naming convention</Type>
+      <OClExpression>
+        let javaKeywords = Set{'abstract','continue','for','new','switch',
+		'assert','default','goto','package','synchronized',
+		'boolean','do','if','private','this',
+		'break','double','implements','protected','throw',
+		'byte','else','import','public','throws',
+		'case','enum','instanceof','return','transient',
+		'catch','extends','int','short','try',
+		'char','final','interface','static','void',
+		'class','finally','long','strictfp','volatile',
+		'const','float','native','super','while', 'true', 'false', 'null'
+		}
+
+		in Class.allInstances()-&gt;forAll(c|javaKeywords-&gt;excludes(c.name))
+
+      </OClExpression>
+  </Property>
+  
+  <Property>
+      <Name>Class name is not a C++ keyword</Name>
+      <Type>Naming convention</Type>
+      <OClExpression>
+        let cppKeywords = Set{'asm','else','new','this',
+		'auto','enum','operator','throw',
+		'bool','explicit','private','true',
+		'break','export','protected','try',
+		'case','extern','public','typedef',
+		'catch','false','register','typeid',
+		'char','float','reinterpret_cast','typename',
+		'class','for','return','union',
+		'const','friend','short','unsigned',
+		'const_cast','goto','signed','using',
+		'continue','if','sizeof','virtual',
+		'default','inline','static','void',
+		'delete','int','static_cast','volatile',
+		'do','long','struct','wchar_t',
+		'double','mutable','switch','while',
+		'dynamic_cast','namespace','template', 'true', 'false', 'null'
+		}
+
+		in Class.allInstances()-&gt;forAll(c|cppKeywords-&gt;excludes(c.name))
+      </OClExpression>
+  </Property>
+  </QualityProperty>

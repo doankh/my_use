@@ -114,7 +114,7 @@ import org.tzi.use.gui.views.diagrams.classdiagram.MClassDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewMetaObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.statemachine.StateMachineDiagramView;
-import org.tzi.use.gui.views.qualityassessment.ModelMetricsEvaluation;
+import org.tzi.use.gui.views.qualityassessment.MetricsEvaluation;
 import org.tzi.use.gui.views.qualityassessment.QualityPropertiesEval;
 import org.tzi.use.main.ChangeEvent;
 import org.tzi.use.main.ChangeListener;
@@ -459,8 +459,8 @@ public class MainWindow extends JFrame {
         // create Meta model menu
         menu = new JMenu("Meta Modeling");
         menu.setMnemonic('M');
+        menu.setEnabled(false);
 		fMenuBar.add(menu);
-		
 		mi = menu.add(new ActionViewCreateClassDiagram(true, false, "Full Meta-model class diagram", ""));
 		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified class diagram", ""));
 		
@@ -1197,10 +1197,17 @@ public class MainWindow extends JFrame {
             	mmodel = mcompile(Options.metamodelFilename);
             	// create system
             	system = new MSystem(model);
-            	metaSystem = new MSystem(mmodel);
-            	//auto generate meta-instance and add it into metaSystem
-            	
-            	generateMetaInstances(system, metaSystem);
+            	if(mmodel!=null){
+	            	metaSystem = new MSystem(mmodel);
+	            	//auto generate meta-instance and add it into metaSystem
+	            	
+	            	generateMetaInstances(system, metaSystem);
+	            	getJMenuBar().getMenu(4).setEnabled(true);
+            	}
+            	else{
+            		metaSystem = null;
+            		getJMenuBar().getMenu(4).setEnabled(false);
+        		}
             } else {
             	system = null;
             	metaSystem = null;
@@ -1709,7 +1716,7 @@ public class MainWindow extends JFrame {
 
         @Override
 		public void actionPerformed(ActionEvent e) {
-            ModelMetricsEvaluation civ = new ModelMetricsEvaluation(MainWindow.this, fSession);
+            MetricsEvaluation civ = new MetricsEvaluation(MainWindow.this, fSession);
             ViewFrame f = new ViewFrame("Model Metrics Evaluation", civ, "InvariantView.gif");
             JComponent c = (JComponent) f.getContentPane();
             c.setLayout(new BorderLayout());

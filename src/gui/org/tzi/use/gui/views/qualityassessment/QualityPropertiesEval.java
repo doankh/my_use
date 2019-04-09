@@ -24,6 +24,8 @@ package org.tzi.use.gui.views.qualityassessment;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -31,6 +33,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -69,14 +72,15 @@ public class QualityPropertiesEval extends JPanel implements View {
 	private MSystem metaSystem;
 	private Evaluator evaluator;
 	private JTable tblPropertiesEval;
+	private JButton btnAddNew;
 	private PropertyEvaluationTableModel tableModel = new PropertyEvaluationTableModel();
 	
 	public QualityPropertiesEval(final MainWindow parent, final Session fSession) {
 		metaSystem = fSession.metaSystem();
 		
-		setLayout(new BorderLayout());		
+		setLayout(new BorderLayout());	
 		
-		//Display list of the properties and the corresponding evaluation results on a JTable
+		//----Display list of the properties and the corresponding evaluation results on a JTable
 		tblPropertiesEval = new JTable();
 		tblPropertiesEval.setModel(tableModel);
 		
@@ -101,7 +105,7 @@ public class QualityPropertiesEval extends JPanel implements View {
       	column.setCellRenderer(renderer);
       	
       	//set the table column widths
-      	int[] columnWidths = {200,100,50,100};
+      	int[] columnWidths = {300,200,100,150};
       	setTableColumnWidths(columnWidths);
       	
       	//sort the list of properties
@@ -118,13 +122,26 @@ public class QualityPropertiesEval extends JPanel implements View {
 		JPanel bottomPanel = new JPanel(new BorderLayout());
 		//print summary info, i.e., number of the unsatisfiable properties
 		JLabel lblInfo = new JLabel();
-		lblInfo.setText("Model evaluation result: " + tableModel.getNumofFailures() + " property(ies) failed.");
+		lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " property(ies) failed. </html>");
 		lblInfo.setForeground(Color.RED);
-		bottomPanel.add(lblInfo,BorderLayout.CENTER);		
+		bottomPanel.add(lblInfo,BorderLayout.NORTH);
+		
+		//button Addnew
+		btnAddNew = new JButton("Add New Property");
+		btnAddNew.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				AddNewQualityProperty dlg = new AddNewQualityProperty(fSession, parent);
+				dlg.setVisible(true);
+			}
+		});
+		btnAddNew.setBackground(Color.WHITE);
+		bottomPanel.add(btnAddNew,BorderLayout.EAST);
 		add(bottomPanel, BorderLayout.SOUTH);
 	}
 	
-	//Load property library defined in an XML file
+	//Function to load property library defined in an XML file
 	public List<QualityProperty> loadPropertyLibrary(){
 		List<QualityProperty> result = new ArrayList<QualityProperty>();
 		try {
@@ -135,16 +152,15 @@ public class QualityPropertiesEval extends JPanel implements View {
 			Document doc = dBuilder.parse(xmlFile);
 			NodeList nList = doc.getElementsByTagName("Property");
 			for(int i=0; i<nList.getLength(); i++)
-			{
-				QualityProperty property = new QualityProperty();
+			{				
 				Node nNode = nList.item(i);
 				if(nNode.getNodeType() == Node.ELEMENT_NODE)
 				{
 					Element eElement = (Element) nNode;
-					property.setName(eElement.getElementsByTagName("Name").item(0).getTextContent());
-					property.setType(eElement.getElementsByTagName("Type").item(0).getTextContent());
-					property.setOclExpression(eElement.getElementsByTagName("OClExpression").item(0).getTextContent());
-					
+					QualityProperty property = new QualityProperty(
+							eElement.getElementsByTagName("Name").item(0).getTextContent(),
+							eElement.getElementsByTagName("Type").item(0).getTextContent(),
+							eElement.getElementsByTagName("OClExpression").item(0).getTextContent());					
 					String errFilename = homeDir.resolve("metamodels").resolve("QualityPropertiesEvalLog.txt").toAbsolutePath().toString();
 					
 					PrintWriter out = new PrintWriter(errFilename);
@@ -162,16 +178,26 @@ public class QualityPropertiesEval extends JPanel implements View {
 			        out.flush();
 			        
 			        try {
-			            // evaluate it with current system state
-			            evaluator = new Evaluator(true);
-			            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
-			            // print result
-			            property.setSatisfaction(Boolean.parseBoolean(val.toString()));
+			        	if(expr == null) //if there is an error in compiling the Ocl expression
+			        		property.setIsValidOclExpression(false);
+			        	else
+			        	{
+				            // evaluate it with current system state
+				            evaluator = new Evaluator(true);
+				            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
+				            if(val.isBoolean())//if the Ocl expression is a Boolean expression
+				            {
+				            	property.setIsValidOclExpression(true);
+				            	property.setSatisfaction(Boolean.parseBoolean(val.toString()));
+				            }
+				            else
+				            	property.setIsValidOclExpression(false);
+			        	}
 			        } catch (MultiplicityViolationException e) {
 			            
 			        }
-				}
-				result.add(property);
+			        result.add(property);
+				}				
 			}
 			
 		} catch (Exception e) {
@@ -200,6 +226,13 @@ class QualityProperty{
 	private String type;
 	private String oclExpression;
 	private Boolean satisfaction;
+	private Boolean isValidOclExpression;
+	
+	public QualityProperty(String sName, String sType, String sOclExpression){
+		this.name = sName;
+		this.type = sType;
+		this.oclExpression = sOclExpression;
+	}
 	/**
 	 * @return the name
 	 */
@@ -248,6 +281,18 @@ class QualityProperty{
 	public void setSatisfaction(Boolean satisfaction) {
 		this.satisfaction = satisfaction;
 	}
+	/**
+	 * @return the isValidOclExpression
+	 */
+	public Boolean getIsValidOclExpression() {
+		return isValidOclExpression;
+	}
+	/**
+	 * @param isValidOclExpression the isValidOclExpression to set
+	 */
+	public void setIsValidOclExpression(Boolean isValidOclExpression) {
+		this.isValidOclExpression = isValidOclExpression;
+	}
 	
 }
 
@@ -294,24 +339,42 @@ class PropertyEvaluationTableModel extends AbstractTableModel {
         case 3:
         	StringBuilder text = new StringBuilder();
         	text.append("<html><font color='");
-        	if(list.get(rowIndex).getSatisfaction())
-        		text.append("green");
+        	if(list.get(rowIndex).getIsValidOclExpression())
+        	{
+	        	if(list.get(rowIndex).getSatisfaction())
+	        		text.append("green");
+	        	else
+	        		text.append("red");
+	        	text.append("'>");
+	        	text.append(list.get(rowIndex).getSatisfaction().toString() + "</font></html>");
+        	}
         	else
-        		text.append("red");
-        	text.append("'>");
-        	text.append(list.get(rowIndex).getSatisfaction().toString() + "</font></html>");
+        	{
+        		text.append("gray'>");
+        		text.append("Can not evaluate the property!" + "</font></html>");
+        	}
+        		     	
 			return text.toString();
         default:
             return null;
         }
     }
-    
+    //return the number of unsatisfiable properties
     public int getNumofFailures(){
     	int numOfFailures =0;
     	for(int rowIndex=0; rowIndex<list.size();rowIndex++)
-    		if(!list.get(rowIndex).getSatisfaction())
+    		if(list.get(rowIndex).getIsValidOclExpression() && !list.get(rowIndex).getSatisfaction())
     			numOfFailures++;
     	return numOfFailures;
+    			
+    }
+    //return the number of invalid properties (invalid OCL exps or non-boolean exps)
+    public int getNumofInvalidExps(){
+    	int numOfInvalideExps =0;
+    	for(int rowIndex=0; rowIndex<list.size();rowIndex++)
+    		if(!list.get(rowIndex).getIsValidOclExpression())
+    			numOfInvalideExps++;
+    	return numOfInvalideExps;
     			
     }
 }
