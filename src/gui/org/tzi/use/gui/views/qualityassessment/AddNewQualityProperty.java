@@ -26,6 +26,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -40,6 +42,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -105,6 +108,25 @@ public class AddNewQualityProperty extends JDialog {
         // create text components and labels
         fTextIn = new JTextArea();
         fTextIn.setFont(evalFont);
+        fTextIn.addKeyListener(new KeyListener() {
+			
+			@Override
+			public void keyTyped(KeyEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void keyPressed(KeyEvent e) {
+				btnAdd.setEnabled(false);				
+			}
+		});
         JLabel textInLabel = new JLabel("Enter OCL expression:");
         textInLabel.setDisplayedMnemonic('O');
         textInLabel.setLabelFor(fTextIn);
@@ -165,7 +187,7 @@ public class AddNewQualityProperty extends JDialog {
         btnEval.addActionListener(new ActionListener() {
             @Override
 			public void actionPerformed(ActionEvent e) {         	
-            		evaluate(fTextIn.getText(), false);
+            		btnAdd.setEnabled(evaluate(fTextIn.getText(), false));
             }
         });
         Dimension dim = btnEval.getMaximumSize();
@@ -178,13 +200,16 @@ public class AddNewQualityProperty extends JDialog {
 			
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				addNewPropertytoXMLFile(fTextName.getText(), fComboType.getSelectedItem().toString(), fTextIn.getText());			
+				if(fTextName.getText().trim().equals(""))
+					JOptionPane.showMessageDialog(null,"The name of the property can be empty!");
+				else
+					addNewPropertytoXMLFile(fTextName.getText(), fComboType.getSelectedItem().toString(), fTextIn.getText());			
 			}
 		});
         dim = btnAdd.getMaximumSize();
         dim.width = Short.MAX_VALUE;
         btnAdd.setMaximumSize(dim);
-        
+        btnAdd.setEnabled(false);
         
         JButton btnClear = new JButton("Clear");
         btnClear.setMnemonic('C');
@@ -192,6 +217,7 @@ public class AddNewQualityProperty extends JDialog {
             @Override
 			public void actionPerformed(ActionEvent e) {
                 fTextOut.setText(null);
+                btnAdd.setEnabled(false);
             }
         });
         dim = btnClear.getMaximumSize();
@@ -225,7 +251,7 @@ public class AddNewQualityProperty extends JDialog {
         getRootPane().setDefaultButton(btnEval);
 
         pack();
-        setSize(new Dimension(400, 300));
+        setSize(new Dimension(450, 280));
         setLocationRelativeTo(parent);
         fTextIn.requestFocus();
 
@@ -236,14 +262,15 @@ public class AddNewQualityProperty extends JDialog {
         fTextOut.addKeyListener(ekl);
 	}
 	/*
-	 * Evaluate the input OCL expression
+	 * Evaluate the input OCL expression. 
+	 * Return True only if the result of the evaluation is a Boolean value.
 	 */
 	private boolean evaluate(String in, boolean evalTree) {
         //select the system will be evaluated
-    	MSystem evalSystem = this.fMetaSystem;
+    	Boolean check = false;
+		MSystem evalSystem = this.fMetaSystem;
     	if (evalSystem == null) {
         	fTextOut.setText("No system!");
-        	return false;
         }
         
     	// clear previous results
@@ -291,7 +318,6 @@ public class AddNewQualityProperty extends JDialog {
                     fTextIn.setCaretPosition(caret);
                 } catch (NumberFormatException ex) { }
             }
-            return false;
         }
 
         try {
@@ -301,11 +327,11 @@ public class AddNewQualityProperty extends JDialog {
                     .varBindings());
             // print result
             fTextOut.setText(val.toStringWithType());
-            return true;
+            if(val.isBoolean()) check = true;
         } catch (MultiplicityViolationException e) {
             fTextOut.setText("Could not evaluate. " + e.getMessage());
         }
-        return false;
+        return check;
     }
 	/*
 	 * add new property to XML library file

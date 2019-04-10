@@ -1,12 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><QualityProperty>
-  <Property>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><QualityProperies>
+   <Property>
       <Name>Abstract class has subclass</Name>
       <Type>Design</Type>
       <OClExpression>
         Class.allInstances()-&gt;forAll(c|c.isAbstract implies c.subClass-&gt;notEmpty())  
       </OClExpression>
   </Property>
-  
   <Property>
       <Name>No unused class</Name>
       <Type>Design</Type>
@@ -204,4 +203,4 @@
 		in Class.allInstances()-&gt;forAll(c|cppKeywords-&gt;excludes(c.name))
       </OClExpression>
   </Property>
-  </QualityProperty>
+</QualityProperies>

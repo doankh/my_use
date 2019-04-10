@@ -24,6 +24,7 @@ package org.tzi.use.gui.views.qualityassessment;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -73,6 +74,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 	private Evaluator evaluator;
 	private JTable tblPropertiesEval;
 	private JButton btnAddNew;
+	private JButton btnRefresh;
 	private PropertyEvaluationTableModel tableModel = new PropertyEvaluationTableModel();
 	
 	public QualityPropertiesEval(final MainWindow parent, final Session fSession) {
@@ -120,6 +122,7 @@ public class QualityPropertiesEval extends JPanel implements View {
       	
 		add(scrollPane, BorderLayout.CENTER);
 		JPanel bottomPanel = new JPanel(new BorderLayout());
+		
 		//print summary info, i.e., number of the unsatisfiable properties
 		JLabel lblInfo = new JLabel();
 		lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " property(ies) failed. </html>");
@@ -127,6 +130,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 		bottomPanel.add(lblInfo,BorderLayout.NORTH);
 		
 		//button Addnew
+		JPanel btnPanel = new JPanel(new FlowLayout());
 		btnAddNew = new JButton("Add New Property");
 		btnAddNew.addActionListener(new ActionListener() {
 			
@@ -137,7 +141,22 @@ public class QualityPropertiesEval extends JPanel implements View {
 			}
 		});
 		btnAddNew.setBackground(Color.WHITE);
-		bottomPanel.add(btnAddNew,BorderLayout.EAST);
+		btnPanel.add(btnAddNew);
+		
+		//button Refresh
+		btnRefresh = new JButton("Refresh");
+		btnRefresh.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				List<QualityProperty> propertyList = loadPropertyLibrary();
+				tableModel.setList(propertyList);
+			}
+		});
+		btnRefresh.setBackground(Color.WHITE);
+		btnPanel.add(btnRefresh);
+		bottomPanel.add(btnPanel,BorderLayout.CENTER);
+				
 		add(bottomPanel, BorderLayout.SOUTH);
 	}
 	

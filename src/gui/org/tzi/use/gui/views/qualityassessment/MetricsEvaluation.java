@@ -70,6 +70,8 @@ public class MetricsEvaluation extends JPanel implements View{
 	private MSystem metaSystem;
 	private Evaluator evaluator;
 	private JTable tblMetricsEvaluation;
+	private JLabel lblInfo;
+	private JButton btnLoadConfigFile;
 	MetricsEvaluationTableModel tableModel = new MetricsEvaluationTableModel();
 	
 	/**
@@ -82,7 +84,7 @@ public class MetricsEvaluation extends JPanel implements View{
 		setLayout(new BorderLayout());
 		
 		
-		JButton btnLoadConfigFile = new JButton("Load the Setting");
+		btnLoadConfigFile = new JButton("Load the Setting");
 		btnLoadConfigFile.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -154,6 +156,7 @@ public class MetricsEvaluation extends JPanel implements View{
 					}
 					
 					tableModel.setList(configList);
+					lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " setting failed. </html>");
 					
 				}catch(IOException ex){}
 			}
@@ -190,6 +193,12 @@ public class MetricsEvaluation extends JPanel implements View{
 		
 		add(scrollPane, BorderLayout.CENTER);
 		JPanel bottomPanel = new JPanel(new BorderLayout());
+		//print summary info, i.e., number of the unsatisfiable setting
+		
+		//lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " setting failed. </html>");
+		lblInfo = new JLabel();
+		lblInfo.setForeground(Color.RED);
+		bottomPanel.add(lblInfo,BorderLayout.NORTH);
 		
 		bottomPanel.add(btnLoadConfigFile,BorderLayout.EAST);
 		btnLoadConfigFile.setBackground(Color.WHITE);
@@ -236,7 +245,7 @@ class MetricsEvaluationTableModel extends AbstractTableModel {
     public int getColumnCount() {
         return columnNames.length;
     }
-
+    @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         switch (columnIndex) {
         case 0:
@@ -248,10 +257,26 @@ class MetricsEvaluationTableModel extends AbstractTableModel {
         case 3:
             return list.get(rowIndex).getMaxValue();
         case 4:
-            return list.get(rowIndex).getSatisfaction();
+        	StringBuilder text = new StringBuilder();
+        	text.append("<html><font color='");
+        	if(list.get(rowIndex).getSatisfaction())
+        		text.append("green");
+        	else
+        		text.append("red");
+        		text.append("'>");
+        		text.append(list.get(rowIndex).getSatisfaction().toString() + "</font></html>");
+        	return text.toString();
         default:
             return null;
         }
     }
-    
+    //return the number of unsatisfiable properties
+    public int getNumofFailures(){
+    	int numOfFailures =0;
+    	for(int rowIndex=0; rowIndex<list.size();rowIndex++)
+    		if(!list.get(rowIndex).getSatisfaction())
+    			numOfFailures++;
+    	return numOfFailures;
+    			
+    }
 }
