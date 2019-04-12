@@ -403,8 +403,7 @@ public class MainWindow extends JFrame {
         menu.add(fCbMenuItemCheckStateInvariants);
         
         menu.add(fActionDetermineStates);
-        menu.add(fActionCheckStateInvariants);
-        menu.add(fActionGenerateMetaInstances);
+        menu.add(fActionCheckStateInvariants);       
         
         menu.add(new JSeparator());
         mi = menu.add(fActionStateReset);
@@ -461,19 +460,22 @@ public class MainWindow extends JFrame {
         menu.setMnemonic('M');
         menu.setEnabled(false);
 		fMenuBar.add(menu);
-		mi = menu.add(new ActionViewCreateClassDiagram(true, false, "Full Meta-model class diagram", ""));
-		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified class diagram", ""));
+		mi = menu.add(new ActionViewCreateClassDiagram(true, false, "Full Metamodel class diagram", ""));
+		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified Metamodel class diagram", ""));
 		
-		submenu = new JMenu("Sub Meta-Model Class Diagram");
+		submenu = new JMenu("Sub Metamodel class diagrams");
 		submenu.setMnemonic('s');
 		menu.add(submenu);
 		Set<String> subMClassDiagrams = new HashSet<String>(Arrays.asList("Namespaces diagram",
 				"Classifiers diagram","Features diagram", "Operations diagram", "Classes diagram", "DataTypes diagram"));
 		for(String m: subMClassDiagrams)
 			submenu.add(new ActionViewCreateClassDiagram(true, false, m, ""));
-        
+		
+		menu.addSeparator();
+		mi = menu.add(fActionGenerateMetaInstances);
         mi = menu.add(fActionGenerateMetamodelObjectDiagram);
         
+        menu.addSeparator();
         mi = menu.add(fActionMetricsEvaluation);
 
         mi = menu.add(fActionPopertiesEvaluation);
@@ -1260,9 +1262,14 @@ public class MainWindow extends JFrame {
     		MMInstanceGenerator v = new MMInstanceGenerator();
     		system.model().processWithVisitor(v);
     		LinkedList<String> genSoilCommands = v.getGeneratedShellCommands();	
-    		
+    		fLogWriter.println("------------------------");
+    		fLogWriter.println("----Generated soil commands for meta-instances----");
+    		fLogWriter.println("------------------------");
     		for (int i = 0; i < genSoilCommands.size(); i++)
-				metaSystem.execute(genSoilCommands.get(i));
+			{
+    			fLogWriter.println(genSoilCommands.get(i));
+    			metaSystem.execute(genSoilCommands.get(i));
+			}
         }
     	/*
          * Translate a soilcommand to a statement which can be executed from code
@@ -1727,7 +1734,7 @@ public class MainWindow extends JFrame {
     
     private class ActionQualityPropertiesEvaluation extends AbstractAction{
     	ActionQualityPropertiesEvaluation() {
-            super("Quality Properties Evaluation", getIcon("propertylist.png"));
+            super("Quality Properties Evaluation", getIcon("propertycheck.png"));
         }
 
         @Override
@@ -1779,7 +1786,7 @@ public class MainWindow extends JFrame {
     
     private class ActionGenerateMetaInstances extends AbstractAction {
     	ActionGenerateMetaInstances() {
-			super("Generate Meta-Instances");
+			super("Generate metainstances");
 		}
     	
 		@Override
@@ -2011,7 +2018,7 @@ public class MainWindow extends JFrame {
     	private boolean isMetamodel;
     	//private String iconName;
     	ActionViewCreateObjectDiagram(boolean _isMetamodel) {
-            super(!_isMetamodel? "Object diagram": "Meta Object diagram", getIcon("ObjectDiagram.gif"));
+            super(!_isMetamodel? "Object diagram": "Meta object diagram", getIcon("ObjectDiagram.gif"));
             isMetamodel = _isMetamodel;
         }
 

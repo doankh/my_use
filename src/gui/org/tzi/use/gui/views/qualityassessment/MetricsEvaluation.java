@@ -170,9 +170,9 @@ public class MetricsEvaluation extends JPanel implements View{
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				int row = tblMetricsEvaluation.getSelectedRow();
-				String value = tblMetricsEvaluation.getModel().getValueAt(row, 4).toString();
+				Boolean value = ((MetricsEvaluationTableModel)tblMetricsEvaluation.getModel()).getDataItem(row).getSatisfaction();
 				String scope = tblMetricsEvaluation.getModel().getValueAt(row, 0).toString();
-				if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2 && row >= 0 && scope.equals("Class") && value.equals("false")){
+				if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2 && row >= 0 && scope.equals("Class") && !value){
 					MetricEvaluationDetailedView dlg = 
 							new MetricEvaluationDetailedView(fSession, parent, tableModel.getDataItem(row));
 		            dlg.setVisible(true);

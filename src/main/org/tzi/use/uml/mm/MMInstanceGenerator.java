@@ -88,8 +88,11 @@ public class MMInstanceGenerator implements MMVisitor {
     	String id = genInstance(e, "Association");
         soilCommands.add("set " + id + ".isDerived := " + e.isDerived());
         for(MClass cls: e.associatedClasses())
-        	soilCommands.add("insert (" + cls.name() + "Class, " + id + 
+        {
+        	Boolean isAssociationClass = cls instanceof MAssociationClass;
+        	soilCommands.add("insert (" + cls.name() + (isAssociationClass?"AssociationClass, ":"Class, ") + id + 
                 ") into A_Association_Association_Type_EndType");
+        }
         // visit association ends
         for (MAssociationEnd assocEnd : e.associationEnds()) {
             assocEnd.processWithVisitor(this);

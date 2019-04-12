@@ -133,13 +133,13 @@ public class AddNewQualityProperty extends JDialog {
         
         fTextName = new JTextArea();
         fTextName.setFont(evalFont);
-        JLabel textNamelabel = new JLabel("Name:");
+        JLabel textNamelabel = new JLabel("Property name:");
         textNamelabel.setLabelFor(fTextName);
         
         String[] types = {"Design","Metrics","Naming convention"};
         fComboType = new JComboBox(types);
         fComboType.setSelectedIndex(0);
-        JLabel comboTypeLabel = new JLabel("Type");
+        JLabel comboTypeLabel = new JLabel("Type:");
         comboTypeLabel.setLabelFor(fComboType);
         
         fTextOut = new JTextArea();
