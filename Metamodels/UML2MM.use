@@ -3022,12 +3022,17 @@ operations
 	NAS(): Integer =
 		allAssociations()->size() + allAncestors().collect(association)->size()
 		
-	--4.4. Coupling Between Object (CBO). !!This metric can only be approximately measured
-	CBO(): Integer =
+	--4.4. Coupling Between Object (CBO) or efferent coupling (Ce). !!This metric can only be approximately measured
+	Ce(): Integer =
 		Class.allInstances()->excluding(self.class)->select(c|isCoupledbyAttribute(c) 
 		or isCoupledbyParameter(c) or isCoupledbyReturnType(c) or isCoupledbyAssociation(c))->size()
 	
-	--4.5. Direct Class Coupling (DCC)
+	--4.5. Afferent coupling (Ca). !!This metric can only be approximately measured
+	Ca(): Integer =
+		Class.allInstances()->excluding(self.class)->select(c|c.metric.isCoupledbyAttribute(self) 
+		or c.metric.isCoupledbyParameter(self) or c.metric.isCoupledbyReturnType(self) or c.metric.isCoupledbyAssociation(self))->size()
+	
+	--4.6. Direct Class Coupling (DCC)
 	DCC(): Integer =
 		Class.allInstances()->excluding(self.class)->select(c|isCoupledbyAttribute(c) 
 		or isCoupledbyParameter(c))->size()

@@ -107,6 +107,12 @@ public class MMInstanceGenerator implements MMVisitor {
             String id = genInstance( e, "AssociationClass" );
             soilCommands.add("set " + id + ".isAbstract := " + e.isAbstract());
             soilCommands.add("set " + id + ".isDerived := " + e.isDerived());
+            
+            String id1 = id + "Metrics";
+            soilCommands.add("create " + id1 + " : " + "ClassMetrics");
+            //add A_ClassMetrics_metrics_Class_class assocition between Class and ClassMetrics
+            soilCommands.add("insert (" + id + "," + id1 + ") into A_ClassMetrics_metrics_Class_class");
+
         }
 
         // visit attributes
