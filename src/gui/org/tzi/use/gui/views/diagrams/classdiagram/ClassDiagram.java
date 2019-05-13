@@ -187,6 +187,13 @@ public class ClassDiagram extends DiagramView
     public Selection<PlaceableNode> getNodeSelection() {
 		return this.fNodeSelection;
 	}
+    
+    //HoangDK
+    public Selection<EdgeBase> getEdgeSelection()
+    {
+    	return this.fEdgeSelection;
+    }
+    
 
 	@Override
 	public void resetLayout() {
@@ -1669,12 +1676,10 @@ public class ClassDiagram extends DiagramView
 	}
 	
 	public void deSelectAllElement(){
-		Iterator itr = this.getNodeSelection().iterator();
-		while(itr.hasNext())
-		{
-			PlaceableNode node = (PlaceableNode) itr.next();
-			this.getNodeSelection().remove(node);
-		}
+		//remove all nodes from selection
+		this.getNodeSelection().clear();
+		//remove all edges from selection
+		this.getEdgeSelection().clear();
 	}
 }
 

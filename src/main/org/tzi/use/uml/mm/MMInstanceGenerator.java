@@ -460,4 +460,50 @@ public class MMInstanceGenerator implements MMVisitor {
 			}
 		
 	}
+	
+	public MModelElement getModelElementfromMetaInstanceName(MModel model, String instanceName, String elementKind)
+	{
+		MModelElement element;
+		String elementName;
+		String parentElement;
+		String metaClass;
+		switch (elementKind){
+		case "Class":
+			metaClass = "Class";
+			elementName = instanceName.substring(0,instanceName.length()-metaClass.length());
+			element = model.getClass(elementName);
+			break;
+		case "Association":
+			metaClass = "Association";
+			elementName = instanceName.substring(0,instanceName.length()-metaClass.length());
+			element = model.getAssociation(elementName);
+			break;
+		case "AssociationClass":
+			metaClass = "AssociationClass";
+			elementName = instanceName.substring(0,instanceName.length()-metaClass.length());
+			element = model.getAssociationClass(elementName);
+			break;
+		case "Attribute":
+			metaClass = "Property";
+			elementName = instanceName.substring(instanceName.indexOf("_") + 1,instanceName.length()-metaClass.length());
+			parentElement = instanceName.substring(0,instanceName.indexOf("_"));
+			element = model.getClass(parentElement).attribute(elementName, false);
+			break;
+		case "Operation":
+			metaClass = "Property";
+			elementName = instanceName.substring(instanceName.indexOf("_") + 1,instanceName.length()-metaClass.length());
+			parentElement = instanceName.substring(0,instanceName.indexOf("_"));
+			element = model.getClass(parentElement).operation(elementName, false);
+			break;
+		case "Generalization":
+			elementName = instanceName;
+			element = model.getGeneralization(elementName);
+			break;
+		default:
+			return null;
+		}
+		
+		return element;
+		
+	}
 }

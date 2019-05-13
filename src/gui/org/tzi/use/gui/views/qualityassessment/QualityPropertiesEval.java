@@ -27,6 +27,8 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -86,6 +88,22 @@ public class QualityPropertiesEval extends JPanel implements View {
 		tblPropertiesEval = new JTable();
 		tblPropertiesEval.setModel(tableModel);
 		
+		tblPropertiesEval.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int row = tblPropertiesEval.getSelectedRow();
+				//get the corresponding selected row in the Table model
+				int dataRow = tblPropertiesEval.convertRowIndexToModel(row);
+				Boolean evalValue = ((PropertyEvaluationTableModel)tblPropertiesEval.getModel()).getDataItem(dataRow).getEvaluation();
+				
+				if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2 && row >= 0 && evalValue){
+					QualityEvaluationDetailView dlg = 
+							new QualityEvaluationDetailView(fSession, parent, tableModel.getDataItem(dataRow));
+		            dlg.setVisible(true);
+				}
+			}
+		});
+		
 		List<QualityProperty> propertyList = loadPropertyLibrary();
 		tableModel.setList(propertyList);
 		
@@ -125,7 +143,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 		
 		//print summary info, i.e., number of the unsatisfiable properties
 		JLabel lblInfo = new JLabel();
-		lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " property(ies) failed. </html>");
+		lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " quality smell(s) found. </html>");
 		lblInfo.setForeground(Color.RED);
 		bottomPanel.add(lblInfo,BorderLayout.NORTH);
 		
@@ -165,11 +183,11 @@ public class QualityPropertiesEval extends JPanel implements View {
 		List<QualityProperty> result = new ArrayList<QualityProperty>();
 		try {
 			Path homeDir = Paths.get(System.getProperty("user.dir")); 
-			File xmlFile = homeDir.resolve("metamodels").resolve("QualityProperties.xml").toFile();
+			File xmlFile = homeDir.resolve("metamodels").resolve("DesignSmells.xml").toFile();
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(xmlFile);
-			NodeList nList = doc.getElementsByTagName("Property");
+			NodeList nList = doc.getElementsByTagName("DesignSmell");
 			for(int i=0; i<nList.getLength(); i++)
 			{				
 				Node nNode = nList.item(i);
@@ -178,8 +196,12 @@ public class QualityPropertiesEval extends JPanel implements View {
 					Element eElement = (Element) nNode;
 					QualityProperty property = new QualityProperty(
 							eElement.getElementsByTagName("Name").item(0).getTextContent(),
+							eElement.getElementsByTagName("Desc").item(0).getTextContent(),
 							eElement.getElementsByTagName("Type").item(0).getTextContent(),
-							eElement.getElementsByTagName("OClExpression").item(0).getTextContent());					
+							eElement.getElementsByTagName("OCLexpression").item(0).getTextContent(),
+							eElement.getElementsByTagName("SelectExpression").item(0).getTextContent(),
+							eElement.getElementsByTagName("ViolatingElement").item(0).getTextContent());
+					
 					String errFilename = homeDir.resolve("metamodels").resolve("QualityPropertiesEvalLog.txt").toAbsolutePath().toString();
 					
 					PrintWriter out = new PrintWriter(errFilename);
@@ -207,7 +229,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 				            if(val.isBoolean())//if the Ocl expression is a Boolean expression
 				            {
 				            	property.setIsValidOclExpression(true);
-				            	property.setSatisfaction(Boolean.parseBoolean(val.toString()));
+				            	property.setEvaluation(Boolean.parseBoolean(val.toString()));
 				            }
 				            else
 				            	property.setIsValidOclExpression(false);
@@ -242,77 +264,135 @@ public class QualityPropertiesEval extends JPanel implements View {
  */
 class QualityProperty{
 	private String name;
+	private String desc;
 	private String type;
 	private String oclExpression;
-	private Boolean satisfaction;
+	private String selectExpression;
+	private String violatingElement;
+	private Boolean evaluation;
 	private Boolean isValidOclExpression;
 	
-	public QualityProperty(String sName, String sType, String sOclExpression){
+	public QualityProperty(String sName, String sDecs, String sType, String sOclExpression, String sSelectExpression, String sViolatingElement){
 		this.name = sName;
+		this.desc = sDecs;
 		this.type = sType;
 		this.oclExpression = sOclExpression;
+		this.selectExpression = sSelectExpression;
+		this.violatingElement = sViolatingElement;
 	}
+
 	/**
 	 * @return the name
 	 */
 	public String getName() {
 		return name;
 	}
+
 	/**
 	 * @param name the name to set
 	 */
 	public void setName(String name) {
 		this.name = name;
 	}
+
+	/**
+	 * @return the desc
+	 */
+	public String getDesc() {
+		return desc;
+	}
+
+	/**
+	 * @param desc the desc to set
+	 */
+	public void setDesc(String desc) {
+		this.desc = desc;
+	}
+
 	/**
 	 * @return the type
 	 */
 	public String getType() {
 		return type;
 	}
+
 	/**
 	 * @param type the type to set
 	 */
 	public void setType(String type) {
 		this.type = type;
 	}
+
 	/**
 	 * @return the oclExpression
 	 */
 	public String getOclExpression() {
 		return oclExpression;
 	}
+
 	/**
 	 * @param oclExpression the oclExpression to set
 	 */
 	public void setOclExpression(String oclExpression) {
 		this.oclExpression = oclExpression;
 	}
+
+	/**
+	 * @return the selectExpression
+	 */
+	public String getSelectExpression() {
+		return selectExpression;
+	}
+
+	/**
+	 * @param selectExpression the selectExpression to set
+	 */
+	public void setSelectExpression(String selectExpression) {
+		this.selectExpression = selectExpression;
+	}
+
+	/**
+	 * @return the violatingElement
+	 */
+	public String getViolatingElement() {
+		return violatingElement;
+	}
+
+	/**
+	 * @param violatingElement the violatingElement to set
+	 */
+	public void setViolatingElement(String violatingElement) {
+		this.violatingElement = violatingElement;
+	}
+
 	/**
 	 * @return the satisfaction
 	 */
-	public Boolean getSatisfaction() {
-		return satisfaction;
+	public Boolean getEvaluation() {
+		return evaluation;
 	}
+
 	/**
 	 * @param satisfaction the satisfaction to set
 	 */
-	public void setSatisfaction(Boolean satisfaction) {
-		this.satisfaction = satisfaction;
+	public void setEvaluation(Boolean eval) {
+		this.evaluation = eval;
 	}
+
 	/**
 	 * @return the isValidOclExpression
 	 */
 	public Boolean getIsValidOclExpression() {
 		return isValidOclExpression;
 	}
+
 	/**
 	 * @param isValidOclExpression the isValidOclExpression to set
 	 */
 	public void setIsValidOclExpression(Boolean isValidOclExpression) {
 		this.isValidOclExpression = isValidOclExpression;
 	}
-	
+		
 }
 
 /*
@@ -321,7 +401,7 @@ class QualityProperty{
 @SuppressWarnings("serial")
 class PropertyEvaluationTableModel extends AbstractTableModel {
     private List<QualityProperty> list = new ArrayList<QualityProperty>();
-	private final String[] columnNames = { "Name", "Type", "OCL Expression", "Satisfiability" };
+	private final String[] columnNames = { "Design Smell", "Type", "OCL Expression", "Evaluation" };
 
     public void setList(List<QualityProperty> data) {
         this.list = data;
@@ -360,12 +440,12 @@ class PropertyEvaluationTableModel extends AbstractTableModel {
         	text.append("<html><font color='");
         	if(list.get(rowIndex).getIsValidOclExpression())
         	{
-	        	if(list.get(rowIndex).getSatisfaction())
+	        	if(!list.get(rowIndex).getEvaluation())
 	        		text.append("green");
 	        	else
 	        		text.append("red");
 	        	text.append("'>");
-	        	text.append(list.get(rowIndex).getSatisfaction().toString() + "</font></html>");
+	        	text.append(list.get(rowIndex).getEvaluation().toString() + "</font></html>");
         	}
         	else
         	{
@@ -382,7 +462,7 @@ class PropertyEvaluationTableModel extends AbstractTableModel {
     public int getNumofFailures(){
     	int numOfFailures =0;
     	for(int rowIndex=0; rowIndex<list.size();rowIndex++)
-    		if(list.get(rowIndex).getIsValidOclExpression() && !list.get(rowIndex).getSatisfaction())
+    		if(list.get(rowIndex).getIsValidOclExpression() && list.get(rowIndex).getEvaluation())
     			numOfFailures++;
     	return numOfFailures;
     			

@@ -71,6 +71,8 @@ public class MModel extends MModelElementImpl {
 	private Map<String, MClass> fClasses;
 
 	private Map<String, MAssociation> fAssociations;
+	
+	private Map<String, MGeneralization> fGeneralizations;
 
 	private DirectedGraph<MClassifier, MGeneralization> fGenGraph;
 
@@ -87,6 +89,7 @@ public class MModel extends MModelElementImpl {
 		fEnumTypes = new TreeMap<String, EnumType>();
 		fClasses = new TreeMap<String, MClass>();
 		fAssociations = new TreeMap<String, MAssociation>();
+		fGeneralizations = new TreeMap<String, MGeneralization>();
 		fGenGraph = new DirectedGraphBase<MClassifier, MGeneralization>();
 		fClassInvariants = new TreeMap<String, MClassInvariant>();
 		fPrePostConditions = new TreeMap<String, MPrePostCondition>();
@@ -156,6 +159,10 @@ public class MModel extends MModelElementImpl {
 	 */
 	public MClass getClass(String name) {
 		return fClasses.get(name);
+	}
+	
+	public MGeneralization getGeneralization(String name) {
+		return fGeneralizations.get(name);
 	}
 
 	/**
@@ -432,7 +439,9 @@ public class MModel extends MModelElementImpl {
 		// child.validateInheritance();
 
 		// silently ignore duplicates
+		fGeneralizations.put(gen.name(), gen);
 		fGenGraph.addEdge(gen);
+		
 	}
 
 	/**
