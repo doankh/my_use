@@ -461,7 +461,7 @@ public class MainWindow extends JFrame {
         menu.setEnabled(false);
 		fMenuBar.add(menu);
 		mi = menu.add(new ActionViewCreateClassDiagram(true, false, "Full Metamodel class diagram", ""));
-		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified Metamodel class diagram", ""));
+		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified class diagram", ""));
 		
 		submenu = new JMenu("Sub Metamodel class diagrams");
 		submenu.setMnemonic('s');
@@ -1262,12 +1262,12 @@ public class MainWindow extends JFrame {
     		MMInstanceGenerator v = new MMInstanceGenerator();
     		system.model().processWithVisitor(v);
     		LinkedList<String> genSoilCommands = v.getGeneratedShellCommands();	
-    		fLogWriter.println("------------------------");
+    		/*fLogWriter.println("------------------------");
     		fLogWriter.println("----Generated soil commands for meta-instances----");
-    		fLogWriter.println("------------------------");
+    		fLogWriter.println("------------------------");*/
     		for (int i = 0; i < genSoilCommands.size(); i++)
 			{
-    			fLogWriter.println(genSoilCommands.get(i));
+    			//fLogWriter.println(genSoilCommands.get(i));
     			metaSystem.execute(genSoilCommands.get(i));
 			}
         }

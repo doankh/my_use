@@ -1,0 +1,272 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <DesignSmell>
+      <Name>Abstract class without subclass</Name>
+      <Desc>An abstract class should have a subclass</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|c.isAbstract and c.subClass-&gt; isEmpty())</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c.isAbstract and c.subClass-&gt; isEmpty())</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Unused class</Name>
+      <Desc>The class has no child classes, dependencies, or associations, and it is not used as parameter or property type.</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|c. metrics. CBO() = 0 and c. metrics. NOC()=0)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c. metrics. CBO() = 0 and c. metrics. NOC()=0)</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Data class</Name>
+      <Desc>A class without methods does not provide any functionality.</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists (c|c. metrics. NOM()=0)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c. metrics. NOM()=0)</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Abstract class is subclass of a concrete class</Name>
+      <Desc>An abstract class being subclass of a concrete class reflects poor design and a conflict in the model inheritance hierarchy</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Class.allInstances()->exists(c|c.isAbstract and c. superClass->exists(c1|not c1.isAbstract))</OCLexpression>
+      <SelectExpression>Class.allInstances()->select(c|c.isAbstract and c. superClass->exists(c1|not c1.isAbstract))</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Isolated class</Name>
+      <Desc>A design should not have an isolated class (a class which is not involved in an association or in the inheritance hierarchy)</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c | c.association-&gt; isEmpty() and c.superClass-&gt;isEmpty() and c.subClass-&gt;isEmpty())</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c | c.association-&gt; isEmpty() and c.superClass-&gt;isEmpty() and c.subClass-&gt;isEmpty())</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Duplicate attributes among all subclasses</Name>
+      <Desc>An attribute is repeated (with the same definition) among all specific classes of a hierarchy</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Property.allInstances()-&gt;exists(p|let siblingClasses = p.class.superClass.subClass-&gt; excluding(p.class) in p.class-&gt;notEmpty() and siblingClasses-&gt; notEmpty() and siblingClasses-&gt; forAll(c|c.ownedAttribute-&gt;exists(p1|p1.name = p.name and p1.type = p.type)))</OCLexpression>
+      <SelectExpression>Property.allInstances()-&gt;select(p| let siblingClasses = p.class.superClass.subClass-&gt; excluding(p.class) in p.class-&gt;notEmpty() and siblingClasses-&gt; notEmpty() and siblingClasses-&gt; forAll(c|c.ownedAttribute-&gt;exists(p1|p1.name = p.name and p1.type = p.type)))</SelectExpression>
+      <ViolatingElement>Attribute</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Composition cycles</Name>
+      <Desc>There exist composition cycles in the design.</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|(c.association.memberEnd-&gt; select(e|e.type&lt;&gt;c and e.isComposite).type-&gt;closure(c1|c1.association.memberEnd-&gt;select(e|e.type&lt;&gt;c1 and e.isComposite).type)) -&gt;includes(c))</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|(c.association.memberEnd-&gt; select(e|e.type&lt;&gt;c and e.isComposite).type-&gt;closure(c1|c1.association.memberEnd-&gt;select(e|e.type&lt;&gt;c1 and e.isComposite).type)) -&gt;includes(c))</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Both composite-end association</Name>
+      <Desc>Binary association is composite in both member ends.</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Association.allInstances()-&gt;exists(a|a.memberEnd-&gt; size() = 2 and a.memberEnd-&gt; forAll(e|e.isComposite))</OCLexpression>
+      <SelectExpression>Association.allInstances()-&gt; select(a|a.memberEnd-&gt; size() = 2 and a.memberEnd-&gt; forAll(e|e.isComposite))</SelectExpression>
+      <ViolatingElement>Association</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Composite end is a super class </Name>
+      <Desc>Class contains one of its superclasses, with cardinality 1 in the composition end (this is not finitely satisfiable).</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Association.allInstances()-&gt;exists(a|a.memberEnd-&gt;exists(e1,e2|e1.isComposite and e2.type.oclAsType(Class).superClass-&gt;includes(e1.type.oclAsType(Class))))</OCLexpression>
+      <SelectExpression>Association.allInstances()-&gt; select(a|a.memberEnd-&gt;exists(e1,e2|e1.isComposite and e2.type.oclAsType(Class).superClass-&gt;includes(e1.type.oclAsType(Class))))</SelectExpression>
+      <ViolatingElement>Association</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Abstract class has only one subclass</Name>
+      <Desc>Abstract class is super to only one class (it nullifies the usefulness of the abstract class).</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|c.isAbstract and c.subClass-&gt; size()=1)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c.isAbstract and c.subClass-&gt; size()=1)</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Redundant generalization paths</Name>
+      <Desc>There exists redundant generalization paths.</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Generalization.allInstances()-&gt;exists(g|let indirectAncestors = g.specific.parents().parents()-&gt; closure(generalization.general) in indirectAncestors-&gt;includes(g.general))</OCLexpression>
+      <SelectExpression>Generalization.allInstances()-&gt;select(g|let indirectAncestors = g.specific.parents().parents()-&gt;closure(generalization.general) in indirectAncestors-&gt;includes(g.general))</SelectExpression>
+      <ViolatingElement>Generalization</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Long Parameter List</Name>
+      <Desc>The operation has a long list of parameters that makes it really uncomfortable to use the operation (10-max by default)</Desc>
+      <Type>Metrics</Type>
+      <OCLexpression>Operation.allInstances()-&gt;exists(op|op. ownedParameterRedefined-&gt;size()&gt;10)</OCLexpression>
+      <SelectExpression>Operation.allInstances()-&gt;select(op|op. ownedParameterRedefined-&gt;size()&gt;10)</SelectExpression>
+      <ViolatingElement>Operation</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Overloaded class</Name>
+      <Desc>No class is overloaded with attributes (10-max by default)</Desc>
+      <Type>Metrics</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|c. metrics. NOA() &gt;10)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c. metrics. NOA() &gt;10)</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>High efferent coupling class</Name>
+      <Desc>No class refers to too many others (5-max by default) – a.k.a. efferent couplings (Ce).</Desc>
+      <Type>Metrics</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|c. metrics. CBO() &gt;5)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c. metrics. CBO() &gt;5)</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Deep inheritance hierarchy</Name>
+      <Desc>No hierarchy is too deep (5-level max by default) – a.k.a. depth of inheritance tree (DIT).</Desc>
+      <Type>Metrics</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|c. metrics. DIT() &gt;5)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c. metrics. DIT() &gt;5)</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Too many direct children</Name>
+      <Desc>No class has too many direct children (10-max by default) - a.k.a. number of children (NOC).</Desc>
+      <Type>Metrics</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|c. metrics. NOC()&gt;10)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c. metrics. NOC()&gt;10)</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Class naming camelCase  convention</Name>
+      <Desc>The name of classes should start with a capital letter (camelCase convention)</Desc>
+      <Type>Naming convention</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists (c|c.name.substring(1,1).toUpper() &lt;&gt; c.name.substring(1,1))</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select (c|c.name.substring(1,1).toUpper() &lt;&gt; c.name.substring(1,1))</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Attributes are named after their feature class</Name>
+      <Desc>Attributes are not named after their feature class (e.g., an attribute paperID in class Paper).</Desc>
+      <Type>Naming convention</Type>
+      <OCLexpression>Property.allInstances()-&gt;exists (a|a.class-&gt; notEmpty() and a.name.substring(1,a.class.name.size()).toLower() = a.class.name. toLower())</OCLexpression>
+      <SelectExpression>Property.allInstances()-&gt;select (a|a.class-&gt; notEmpty() and a.name.substring(1,a.class.name.size()).toLower() = a.class.name. toLower())</SelectExpression>
+      <ViolatingElement>Attribute</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Attribute naming camelCase  convention</Name>
+      <Desc>Attribute (association ends) names should start with a lowercase letter.</Desc>
+      <Type>Naming convention</Type>
+      <OCLexpression>Property. allInstances()-&gt;exists (p|p.class->notEmpty() and p.name.substring(1,1).toLower() &lt;&gt; p.name.substring(1,1))</OCLexpression>
+      <SelectExpression>Property. allInstances()-&gt;select (p|p.class->notEmpty() and p.name.substring(1,1).toLower() &lt;&gt; p.name.substring(1,1))</SelectExpression>
+      <ViolatingElement>Attribute</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Operation naming camelCase  convention</Name>
+      <Desc>Operation names should start with a lower case letter.</Desc>
+      <Type>Naming convention</Type>
+      <OCLexpression>Operation. allInstances()-&gt;exists (op|op.name.substring(1,1).toLower() &lt;&gt; op.name.substring(1,1))</OCLexpression>
+      <SelectExpression>Operation. allInstances()-&gt;select (op|op.name.substring(1,1).toLower() &lt;&gt; op.name.substring(1,1))</SelectExpression>
+      <ViolatingElement>Operation</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>God class in the design</Name>
+      <Desc>The class has more than 60 attributes and operations.</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|(c. metrics. NOA()  + c.metrics.NOM())&gt;60)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|(c. metrics. NOA()  + c.metrics.NOM())&gt;60)</SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    <DesignSmell>
+      <Name>Cycle reflexive association</Name>
+      <Desc>Reflexive association that has two member ends: x1..x2 and y1..y2, where y1&gt;x2</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Association.allInstances()-&gt;exists(a|a.endType-&gt; asSet()-&gt;size() =1 and a.memberEnd-&gt; exists(e1,e2|e1.upper&lt;e2.lower))</OCLexpression>
+      <SelectExpression>Association.allInstances()-&gt;select(a|a.endType-&gt;asSet()-&gt;size() =1 and a.memberEnd-&gt;exists(e1,e2|e1.upper&lt;e2.lower))</SelectExpression>
+      <ViolatingElement>Association</ViolatingElement>
+    </DesignSmell>
+
+    <DesignSmell>
+      <Name>Class name is a Java keyword</Name>
+      <Desc>Class name is not a Java keyword.</Desc>
+      <Type>Naming convention</Type>
+      <OCLexpression>Class.allInstances()->exists(c|
+        let javaKeywords = Set{'abstract','continue','for','new','switch',
+        'assert','default','goto','package','synchronized',
+        'boolean','do','if','private','this',
+        'break','double','implements','protected','throw',
+        'byte','else','import','public','throws',
+        'case','enum','instanceof','return','transient',
+        'catch','extends','int','short','try',
+        'char','final','interface','static','void',
+        'class','finally','long','strictfp','volatile',
+        'const','float','native','super','while', 'true', 'false', 'null'
+        }
+        in
+        javaKeywords->includes(c.name))
+      </OCLexpression>
+      <SelectExpression>Class.allInstances()->select(c|
+        let javaKeywords = Set{'abstract','continue','for','new','switch',
+        'assert','default','goto','package','synchronized',
+        'boolean','do','if','private','this',
+        'break','double','implements','protected','throw',
+        'byte','else','import','public','throws',
+        'case','enum','instanceof','return','transient',
+        'catch','extends','int','short','try',
+        'char','final','interface','static','void',
+        'class','finally','long','strictfp','volatile',
+        'const','float','native','super','while', 'true', 'false', 'null'
+        }
+        in
+        javaKeywords->includes(c.name))
+       </SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    
+    <DesignSmell>
+      <Name>Class name is not a C++ keyword</Name>
+      <Desc>Class name is a C++ keyword.</Desc>
+      <Type>Naming convention</Type>
+      <OCLexpression>Class.allInstances()->exists(c|
+        let cppKeywords = Set{'asm','else','new','this',
+        'auto','enum','operator','throw',
+        'bool','explicit','private','true',
+        'break','export','protected','try',
+        'case','extern','public','typedef',
+        'catch','false','register','typeid',
+        'char','float','reinterpret_cast','typename',
+        'class','for','return','union',
+        'const','friend','short','unsigned',
+        'const_cast','goto','signed','using',
+        'continue','if','sizeof','virtual',
+        'default','inline','static','void',
+        'delete','int','static_cast','volatile',
+        'do','long','struct','wchar_t',
+        'double','mutable','switch','while',
+        'dynamic_cast','namespace','template', 'true', 'false', 'null'
+        }
+        in cppKeywords->includes(c.name))
+        </OCLexpression>
+      <SelectExpression>Class.allInstances()->select(c|
+        let cppKeywords = Set{'asm','else','new','this',
+        'auto','enum','operator','throw',
+        'bool','explicit','private','true',
+        'break','export','protected','try',
+        'case','extern','public','typedef',
+        'catch','false','register','typeid',
+        'char','float','reinterpret_cast','typename',
+        'class','for','return','union',
+        'const','friend','short','unsigned',
+        'const_cast','goto','signed','using',
+        'continue','if','sizeof','virtual',
+        'default','inline','static','void',
+        'delete','int','static_cast','volatile',
+        'do','long','struct','wchar_t',
+        'double','mutable','switch','while',
+        'dynamic_cast','namespace','template', 'true', 'false', 'null'
+        }
+        in cppKeywords->includes(c.name))
+      </SelectExpression>
+      <ViolatingElement>Class</ViolatingElement>
+    </DesignSmell>
+    
+    <DesignSmell>
+      <Name>Descendant reference</Name>
+      <Desc>A class that associates to a descendant class</Desc>
+      <Type>Design</Type>
+      <OCLexpression>Association.allInstances()-&gt;exists(a|a.endType-&gt; exists(c1,c2|c1.oclAsType(Class).subClass-&gt; closure(subClass)-&gt;includes(c2.oclAsType(Class))))</OCLexpression>
+      <SelectExpression>Association.allInstances()-&gt;select(a|a.endType-&gt; exists(c1,c2|c1.oclAsType(Class).subClass-&gt; closure(subClass)-&gt;includes(c2.oclAsType(Class))))</SelectExpression>
+      <ViolatingElement>Association</ViolatingElement>
+    </DesignSmell>
+</root>

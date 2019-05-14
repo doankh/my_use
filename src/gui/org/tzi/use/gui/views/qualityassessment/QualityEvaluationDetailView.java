@@ -62,6 +62,7 @@ import org.tzi.use.uml.mm.MOperation;
 import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
+import org.tzi.use.uml.ocl.type.CollectionType;
 import org.tzi.use.uml.ocl.value.Value;
 
 /**
@@ -139,16 +140,21 @@ private Evaluator evaluator;
 	        try {
 	            // evaluate it with current system state
 	            evaluator = new Evaluator(true);
-	            Value val = evaluator.eval(expr, fSession.metaSystem().state(), fSession.metaSystem().varBindings());
-	            // print result
-	            String result = val.toStringWithType();
-	            fTextOut.setText(result);
+	            Value val = evaluator.eval(expr, fSession.metaSystem().state(), fSession.metaSystem().varBindings());            
 	            
 	            //highlight the violating classes on the class diagram by setting it selected
 	            if(val.isSet()) 
 	            {
+	            	org.tzi.use.uml.ocl.type.Type t = ((CollectionType)val.type()).elemType();
 	            	String[] metaObectsNames = val.toString().substring(4, val.toString().length()-1).split(",");
-	            	highlightViolatingElements(fSession.system().model(), metaObectsNames, violatingElementKind);	            	
+	            	highlightViolatingElements(fSession.system().model(), metaObectsNames, t.shortName());
+	            	fTextOut.setText(generateOutput(fSession.system().model(), metaObectsNames, t.shortName(), violatingElementKind));
+	            }
+	            else
+	            {
+	            	// print result
+		            String result = val.toStringWithType();
+		            fTextOut.setText(result);
 	            }
 	        } catch (MultiplicityViolationException e) {
 	        } 
@@ -208,6 +214,7 @@ private Evaluator evaluator;
         setLocationRelativeTo(parent);
 	}
     
+    //highlight the violating classes on the class diagram by setting it selected
     private void highlightViolatingElements(MModel model, String[] violatingMetaInstances, String elementKind)
     {
     	MModelElement modelElement;
@@ -249,9 +256,29 @@ private Evaluator evaluator;
     				ClassNode n = ((ClassDiagramData)cd.getVisibleData()).fClassToNodeMap.get(cls);
     				if(n != null) cd.getNodeSelection().add(n);
     			}
+    				
 			}
     		cd.invalidateContent(true);
 		}  	
+    }
+    
+    //generate output reporting the violating elements
+    private String generateOutput(MModel model, String[] violatingMetaInstances, String metaClass, String elementKind){
+    	String output ="";
+    	int i = violatingMetaInstances.length;
+    	MModelElement modelElement;
+    	output += elementKind + (i>1?(elementKind.equals("Class")?"es":"s"):"") + ": ";
+    	for(String metaInstance: violatingMetaInstances) {
+			modelElement = (new MMInstanceGenerator().getModelElementfromMetaInstanceName(model, metaInstance, metaClass));
+			if(modelElement instanceof MOperation)
+				output += ((MOperation)modelElement).qualifiedName() + "; ";
+			else if (modelElement instanceof MAttribute)
+				output += ((MAttribute)modelElement).qualifiedName() + "; ";
+			else
+				output += modelElement.toString() + "; "; 
+    	}
+    	
+    	return output;
     }
     
 	private void closeDialog() {

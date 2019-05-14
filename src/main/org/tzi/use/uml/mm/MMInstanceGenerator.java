@@ -89,8 +89,7 @@ public class MMInstanceGenerator implements MMVisitor {
         soilCommands.add("set " + id + ".isDerived := " + e.isDerived());
         for(MClass cls: e.associatedClasses())
         {
-        	Boolean isAssociationClass = cls instanceof MAssociationClass;
-        	soilCommands.add("insert (" + cls.name() + (isAssociationClass?"AssociationClass, ":"Class, ") + id + 
+        	soilCommands.add("insert (" + cls.name() + "Class, " + id + 
                 ") into A_Association_Association_Type_EndType");
         }
         // visit association ends
@@ -102,34 +101,13 @@ public class MMInstanceGenerator implements MMVisitor {
     
     //------------------
     public void visitAssociationClass( MAssociationClass e ) {
-        // prints information about associationclass
-        if ( fPass1 ) {
-            String id = genInstance( e, "AssociationClass" );
-            soilCommands.add("set " + id + ".isAbstract := " + e.isAbstract());
-            soilCommands.add("set " + id + ".isDerived := " + e.isDerived());
-            
-            String id1 = id + "Metrics";
-            soilCommands.add("create " + id1 + " : " + "ClassMetrics");
-            //add A_ClassMetrics_metrics_Class_class assocition between Class and ClassMetrics
-            soilCommands.add("insert (" + id + "," + id1 + ") into A_ClassMetrics_metrics_Class_class");
-
-        }
-
-        // visit attributes
-        for (MAttribute attr : e.attributes()) {
-            attr.processWithVisitor( this );
-        }
-
-        // visit operations
-        for (MOperation opc : e.operations()){
-        	opc.processWithVisitor(this);
-        }
-        // visit association ends
-        if ( !fPass1 )
-        	for (MAssociationEnd assocEnd : e.associationEnds()) {
-        		assocEnd.processWithVisitor( this );
-        }
-
+        
+    	//visit class
+    	visitClass(e.cls());
+    	
+    	//visit Association
+    	visitAssociation(e.association());
+    	
     }
     //in UML 2.4, AssociationEnd becomes Property
     public void visitAssociationEnd(MAssociationEnd e) {
@@ -161,19 +139,17 @@ public class MMInstanceGenerator implements MMVisitor {
         if(e.multiplicity().getRanges().size()>0)
         	soilCommands.add("set " + id + ".upper := " + e.multiplicity().getRanges().get(0).getUpper());
         
-        
-        boolean isEndofAssoClass = (e.association() instanceof MAssociationClass);
         // add AssociationEnd_Association links
-        soilCommands.add("insert (" + e.association().name() + (isEndofAssoClass? "AssociationClass, " : "Association, ") + id + 
+        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
                      ") into A_Association_Association_Property_MemberEnd");
         
         
-        soilCommands.add("insert (" + e.association().name() + (isEndofAssoClass? "AssociationClass, " : "Association, ") + id + 
+        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
                 ") into C_Association_OwningAssociation_Property_OwnedEnd");
 //        soilCommands.add("insert (" + e.association().name() + "Association, " + id + 
 //                ") into A_Association_Association_Property_NavigableOwnedEnd");
         //add TypedElement(Property)_Type(Class) link
-        soilCommands.add("insert (" + id + "," + e.cls() + (e.cls() instanceof MAssociationClass? "AssociationClass" : "Class") + 
+        soilCommands.add("insert (" + id + "," + e.cls() + "Class" + 
                 ") into A_TypedElement_TypedElement_Type_Type");
     }
 
@@ -190,11 +166,9 @@ public class MMInstanceGenerator implements MMVisitor {
         soilCommands.add( "set " + id + ".isDerivedUnion := false" );
         soilCommands.add( "set " + id + ".isReadOnly := false" );
         //fOut.println( "!set " + id + ".isID := false" );
-
-        boolean isAttrofAssoClass = e.owner().model().getAssociationClass(e.owner().name()) != null;
         
         // add Class_Property link
-        soilCommands.add("insert (" + e.owner().name() + (isAttrofAssoClass? "AssociationClass, " : "Class, ") + 
+        soilCommands.add("insert (" + e.owner().name() + "Class, " + 
                      id + ") into C_Class_Class_Property_OwnedAttribute");
         
         // add Property_Datatype link for type of attribute
@@ -461,36 +435,31 @@ public class MMInstanceGenerator implements MMVisitor {
 		
 	}
 	
-	public MModelElement getModelElementfromMetaInstanceName(MModel model, String instanceName, String elementKind)
+	public MModelElement getModelElementfromMetaInstanceName(MModel model, String instanceName, String metaClass)
 	{
 		MModelElement element;
 		String elementName;
 		String parentElement;
-		String metaClass;
-		switch (elementKind){
+		
+		switch (metaClass){
 		case "Class":
-			metaClass = "Class";
 			elementName = instanceName.substring(0,instanceName.length()-metaClass.length());
 			element = model.getClass(elementName);
 			break;
 		case "Association":
-			metaClass = "Association";
 			elementName = instanceName.substring(0,instanceName.length()-metaClass.length());
 			element = model.getAssociation(elementName);
 			break;
 		case "AssociationClass":
-			metaClass = "AssociationClass";
 			elementName = instanceName.substring(0,instanceName.length()-metaClass.length());
 			element = model.getAssociationClass(elementName);
 			break;
-		case "Attribute":
-			metaClass = "Property";
+		case "Property":
 			elementName = instanceName.substring(instanceName.indexOf("_") + 1,instanceName.length()-metaClass.length());
 			parentElement = instanceName.substring(0,instanceName.indexOf("_"));
 			element = model.getClass(parentElement).attribute(elementName, false);
 			break;
 		case "Operation":
-			metaClass = "Property";
 			elementName = instanceName.substring(instanceName.indexOf("_") + 1,instanceName.length()-metaClass.length());
 			parentElement = instanceName.substring(0,instanceName.indexOf("_"));
 			element = model.getClass(parentElement).operation(elementName, false);
