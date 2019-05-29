@@ -27,6 +27,8 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -86,11 +88,11 @@ public class QualityPropertiesEval extends JPanel implements View {
 		tblPropertiesEval = new JTable();
 		tblPropertiesEval.setModel(tableModel);
 		
-		/*tblPropertiesEval.addMouseListener(new MouseAdapter(){
+		tblPropertiesEval.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				int row = tblPropertiesEval.getSelectedRow();
-				//get the corresponding selected row in the Table model
+				//get the corresponding selected row in the sorted Table model
 				int dataRow = tblPropertiesEval.convertRowIndexToModel(row);
 				Boolean evalValue = ((PropertyEvaluationTableModel)tblPropertiesEval.getModel()).getDataItem(dataRow).getEvaluation();
 				
@@ -100,7 +102,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 		            dlg.setVisible(true);
 				}
 			}
-		});*/
+		});
 		
 		List<QualityProperty> propertyList = loadPropertyLibrary();
 		tableModel.setList(propertyList);
@@ -176,7 +178,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 		add(bottomPanel, BorderLayout.SOUTH);
 	}
 	
-	//Function to load property library defined in an XML file
+	//Load property library defined in an XML file
 	public List<QualityProperty> loadPropertyLibrary(){
 		List<QualityProperty> result = new ArrayList<QualityProperty>();
 		try {
@@ -223,7 +225,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 			        	{
 				            // evaluate it with current system state
 				            evaluator = new Evaluator(true);
-				            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
+				            Value val = evaluator.eval(expr, metaSystem.state());
 				            if(val.isBoolean())//if the Ocl expression is a Boolean expression
 				            {
 				            	property.setIsValidOclExpression(true);
@@ -233,7 +235,8 @@ public class QualityPropertiesEval extends JPanel implements View {
 				            	property.setIsValidOclExpression(false);
 			        	}
 			        } catch (MultiplicityViolationException e) {
-			            
+			        	property.setIsValidOclExpression(false);
+			        	property.setEvaluation(false);
 			        }
 			        result.add(property);
 				}				
@@ -460,7 +463,7 @@ class PropertyEvaluationTableModel extends AbstractTableModel {
     public int getNumofFailures(){
     	int numOfFailures =0;
     	for(int rowIndex=0; rowIndex<list.size();rowIndex++)
-    		if(list.get(rowIndex).getIsValidOclExpression() && list.get(rowIndex).getEvaluation())
+    		if(getDataItem(rowIndex).getIsValidOclExpression() && getDataItem(rowIndex).getEvaluation())
     			numOfFailures++;
     	return numOfFailures;
     			
@@ -469,7 +472,7 @@ class PropertyEvaluationTableModel extends AbstractTableModel {
     public int getNumofInvalidExps(){
     	int numOfInvalideExps =0;
     	for(int rowIndex=0; rowIndex<list.size();rowIndex++)
-    		if(!list.get(rowIndex).getIsValidOclExpression())
+    		if(!getDataItem(rowIndex).getIsValidOclExpression())
     			numOfInvalideExps++;
     	return numOfInvalideExps;
     			

@@ -49,7 +49,10 @@ import org.tzi.use.gui.views.diagrams.classdiagram.ClassDiagramView;
 import org.tzi.use.gui.views.diagrams.classdiagram.ClassNode;
 import org.tzi.use.main.Session;
 import org.tzi.use.parser.ocl.OCLCompiler;
+import org.tzi.use.uml.mm.MMInstanceGenerator;
 import org.tzi.use.uml.mm.MMetricEvaluationSetting;
+import org.tzi.use.uml.mm.MModel;
+import org.tzi.use.uml.mm.MModelElement;
 import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
@@ -123,8 +126,17 @@ class MetricEvaluationDetailedView extends JDialog {
 	            evaluator = new Evaluator(true);
 	            Value val = evaluator.eval(expr, fSession.metaSystem().state(), fSession.metaSystem().varBindings());
 	            // print result
-	            String result = val.toStringWithType();
-	            fTextOut.setText(result);
+	            if(val.isSet()) 
+	            {
+	            	String[] metaObectsNames = val.toString().substring(4, val.toString().length()-1).split(",");
+	            	fTextOut.setText(generateOutput(fSession.system().model(), metaObectsNames));
+	            }
+	            else
+	            {
+	            	// print result
+		            String result = val.toStringWithType();
+		            fTextOut.setText(result);
+	            }
 	            //highlight the violating classes on the class diagram by setting it selected
 	            if(val.isSet()) 
 	            {
@@ -196,6 +208,20 @@ class MetricEvaluationDetailedView extends JDialog {
         setSize(new Dimension(500, 200));
         setLocationRelativeTo(parent);
 	}
+	
+	//generate output reporting the violating elements
+	private String generateOutput(MModel model, String[] violatingMetaInstances){
+    	String output ="";
+    	int i = violatingMetaInstances.length;
+    	MModelElement modelElement;
+    	for(String metaInstance: violatingMetaInstances) {
+			modelElement = (new MMInstanceGenerator().getModelElementfromMetaInstanceName(model, metaInstance, "Class"));
+			output += modelElement.toString() + "; "; 
+    	}
+    	
+    	return output;
+    }
+	
 	private void closeDialog() {
         setVisible(false);
         dispose();

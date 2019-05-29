@@ -87,7 +87,7 @@ private Evaluator evaluator;
 	 * Create the dialog.
 	 */
     QualityEvaluationDetailView(final Session fSession, final MainWindow parent, QualityProperty designSmell) {
-		super(parent, "Metric evaluation detail");
+		super(parent, "Design smell evaluation detail");
 		
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		

@@ -12,8 +12,8 @@
       <Name>Unused class</Name>
       <Desc>The class has no child classes, dependencies, or associations, and it is not used as parameter or property type.</Desc>
       <Type>Design</Type>
-      <OCLexpression>Class.allInstances()-&gt;exists(c|c. metrics. CBO() = 0 and c. metrics. NOC()=0)</OCLexpression>
-      <SelectExpression>Class.allInstances()-&gt;select(c|c. metrics. CBO() = 0 and c. metrics. NOC()=0)</SelectExpression>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|TypedElement.allInstances()-&gt;collect(type)-&gt;excludes(c) and c.subClass-&gt;isEmpty())</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|TypedElement.allInstances()-&gt;collect(type)-&gt;excludes(c) and c.subClass-&gt;isEmpty())</SelectExpression>
       <ViolatingElement>Class</ViolatingElement>
     </DesignSmell>
     <DesignSmell>
@@ -106,10 +106,13 @@
     </DesignSmell>
     <DesignSmell>
       <Name>High efferent coupling class</Name>
-      <Desc>No class refers to too many others (5-max by default) – a.k.a. efferent couplings (Ce).</Desc>
+      <Desc>No class refers to too many others (5-max by default) – a.k.a. efferent couplings (Ce). Referring to another class here 
+			means has association with that class or has attribute with that class is the type </Desc>
       <Type>Metrics</Type>
-      <OCLexpression>Class.allInstances()-&gt;exists(c|c. metrics. CBO() &gt;5)</OCLexpression>
-      <SelectExpression>Class.allInstances()-&gt;select(c|c. metrics. CBO() &gt;5)</SelectExpression>
+      <OCLexpression>Class.allInstances()-&gt;exists(c|c.ownedAttribute.type-&gt;select(t|t.oclIsKindOf(Class))-&gt;asSet()-&gt;
+		union(c.association.endType-&gt;excluding(c)-&gt;asSet())-&gt;asSet()-&gt;size()&gt;5)</OCLexpression>
+      <SelectExpression>Class.allInstances()-&gt;select(c|c.ownedAttribute.type-&gt;select(t|t.oclIsKindOf(Class))-&gt;asSet()-&gt;
+		union(c.association.endType-&gt;excluding(c)-&gt;asSet())-&gt;asSet()-&gt;size()&gt;5)</SelectExpression>
       <ViolatingElement>Class</ViolatingElement>
     </DesignSmell>
     <DesignSmell>
@@ -172,8 +175,8 @@
       <Name>Cycle reflexive association</Name>
       <Desc>Reflexive association that has two member ends: x1..x2 and y1..y2, where y1&gt;x2</Desc>
       <Type>Design</Type>
-      <OCLexpression>Association.allInstances()-&gt;exists(a|a.endType-&gt; asSet()-&gt;size() =1 and a.memberEnd-&gt; exists(e1,e2|e1.upper&lt;e2.lower))</OCLexpression>
-      <SelectExpression>Association.allInstances()-&gt;select(a|a.endType-&gt;asSet()-&gt;size() =1 and a.memberEnd-&gt;exists(e1,e2|e1.upper&lt;e2.lower))</SelectExpression>
+      <OCLexpression>Association.allInstances()-&gt;exists(a|a.endType-&gt; asSet()-&gt;size() =1 and a.memberEnd-&gt; exists(e1,e2|e1.upper&lt;&gt;-1 and e1.upper&lt;e2.lower))</OCLexpression>
+      <SelectExpression>Association.allInstances()-&gt;select(a|a.endType-&gt;asSet()-&gt;size() =1 and a.memberEnd-&gt;exists(e1,e2|e1.upper&lt;&gt;-1 and e1.upper&lt;e2.lower))</SelectExpression>
       <ViolatingElement>Association</ViolatingElement>
     </DesignSmell>
 
