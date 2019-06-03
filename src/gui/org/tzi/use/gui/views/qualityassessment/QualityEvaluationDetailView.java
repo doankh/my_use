@@ -22,6 +22,7 @@
 package org.tzi.use.gui.views.qualityassessment;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -77,6 +78,8 @@ private Evaluator evaluator;
 	private final JPanel contentPanel = new JPanel();
 	
 	private final JTextArea fTextName;
+	private final JTextArea fTextType;
+	private final JTextArea fTextSeverity;
 	private final JTextArea fTextDecs;
 
     private final JTextArea fTextOut;
@@ -90,6 +93,7 @@ private Evaluator evaluator;
 		super(parent, "Design smell evaluation detail");
 		
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		setResizable(false);
 		
 		// Use font specified in the settings 
         Font evalFont = Font.getFont("use.gui.evalFont", getFont());
@@ -100,19 +104,31 @@ private Evaluator evaluator;
         fTextName.setText(designSmell.getName());
         fTextName.setFont(evalFont);
         JLabel textNameLabel = new JLabel("Name of design smell:");
-        textNameLabel.setDisplayedMnemonic('O');
         textNameLabel.setLabelFor(fTextName);
         
-        fTextDecs = new JTextArea();
+        fTextType = new JTextArea();
+        fTextType.setEditable(false);
+        fTextType.setText(designSmell.getType());
+        fTextType.setFont(evalFont);
+        JLabel textTypeLabel = new JLabel("Type:");
+        textTypeLabel.setLabelFor(fTextType);
+        
+        fTextSeverity = new JTextArea();
+        fTextSeverity.setEditable(false);
+        fTextSeverity.setText(designSmell.getSeverity());
+        fTextSeverity.setFont(evalFont);
+        JLabel textSeverityLabel = new JLabel("Severity:");
+        textSeverityLabel.setLabelFor(fTextSeverity);
+        
+        fTextDecs = new JTextArea(10,50);
         fTextDecs.setEditable(false);
         fTextDecs.setLineWrap(true);
         fTextDecs.setText(designSmell.getDesc());
         fTextDecs.setFont(evalFont);
         JLabel textDecsLabel = new JLabel("Description:");
-        textDecsLabel.setDisplayedMnemonic('O');
         textDecsLabel.setLabelFor(fTextDecs);
         
-        fTextOut = new JTextArea();
+        fTextOut = new JTextArea(5,50);
         fTextOut.setEditable(false);
         fTextOut.setLineWrap(true);
         fTextOut.setFont(evalFont);
@@ -122,7 +138,7 @@ private Evaluator evaluator;
 	        //Evaluate the auto generated meta-query and show result in fTextOut
 	        String evaluationInv = designSmell.getSelectExpression();
 			String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
-			String violatingElementKind = designSmell.getViolatingElement();	
+			String violatingElementKind = designSmell.getContext();	
 			PrintWriter out = new PrintWriter(errFilename);
 	
 	        
@@ -166,10 +182,26 @@ private Evaluator evaluator;
         // create panel on the left and add text components
         JPanel textPane = new JPanel();
         textPane.setLayout(new BoxLayout(textPane, BoxLayout.Y_AXIS));
-
+        textPane.setAlignmentY(Component.LEFT_ALIGNMENT);
+        
         JPanel p = new JPanel(new BorderLayout());
         p.add(textNameLabel, BorderLayout.NORTH);
-        p.add(new JScrollPane(fTextName), BorderLayout.CENTER);
+        p.add(fTextName, BorderLayout.CENTER);
+        
+        textPane.add(p);
+        textPane.add(Box.createRigidArea(new Dimension(0, 5)));
+        
+        p = new JPanel(new BorderLayout());
+        p.add(textTypeLabel, BorderLayout.NORTH);
+        p.add(fTextType, BorderLayout.CENTER);
+        
+        textPane.add(p);
+        textPane.add(Box.createRigidArea(new Dimension(0, 5)));
+        
+        p = new JPanel(new BorderLayout());
+        p.add(textSeverityLabel, BorderLayout.NORTH);
+        p.add(fTextSeverity, BorderLayout.CENTER);
+        
         textPane.add(p);
         textPane.add(Box.createRigidArea(new Dimension(0, 5)));
 
@@ -210,7 +242,7 @@ private Evaluator evaluator;
         contentPane.add(btnPane, BorderLayout.EAST);
 
         pack();
-        setSize(new Dimension(500, 200));
+        setSize(new Dimension(500, 300));
         setLocationRelativeTo(parent);
 	}
     

@@ -82,6 +82,10 @@ public class AddNewQualityProperty extends JDialog {
 	
 	private final JComboBox fComboType;
 	
+	private final JComboBox fComboContext;
+	
+	private final JComboBox fComboSeverity;
+	
     private final JTextArea fTextIn;
 
     private final JTextArea fTextOut;
@@ -96,6 +100,7 @@ public class AddNewQualityProperty extends JDialog {
 	/**
 	 * Create the dialog.
 	 */
+	@SuppressWarnings("unchecked")
 	public AddNewQualityProperty(final Session session, final MainWindow parent) {
 		super(parent, "Add new quality property to the Library");
     	
@@ -106,7 +111,8 @@ public class AddNewQualityProperty extends JDialog {
         Font evalFont = Font.getFont("use.gui.evalFont", getFont());
         
         // create text components and labels
-        fTextIn = new JTextArea();
+        fTextIn = new JTextArea(10,50);
+        fTextIn.setLineWrap(true);
         fTextIn.setFont(evalFont);
         fTextIn.addKeyListener(new KeyListener() {
 			
@@ -142,7 +148,19 @@ public class AddNewQualityProperty extends JDialog {
         JLabel comboTypeLabel = new JLabel("Type:");
         comboTypeLabel.setLabelFor(fComboType);
         
-        fTextOut = new JTextArea();
+        String[] severity = {"Critical","Medium","Low"};
+        fComboSeverity = new JComboBox(severity);
+        fComboSeverity.setSelectedIndex(0);
+        JLabel comboSeverityLabel = new JLabel("Severity:");
+        comboSeverityLabel.setLabelFor(fComboSeverity);
+        
+        String[] context = {"Class","Association","Generalization","Property","Operation"};
+        fComboContext = new JComboBox(context);
+        fComboContext.setSelectedIndex(0);
+        JLabel comboContextLabel = new JLabel("Context:");
+        comboContextLabel.setLabelFor(fComboContext);
+        
+        fTextOut = new JTextArea(5,50);
         fTextOut.setEditable(false);
         fTextOut.setLineWrap(true);
         fTextOut.setFont(evalFont);
@@ -162,8 +180,20 @@ public class AddNewQualityProperty extends JDialog {
         
         p = new JPanel(new BorderLayout());
         p.add(comboTypeLabel, BorderLayout.NORTH);
-        textPane.add(p);
-        textPane.add(fComboType);
+        p.add(fComboType);
+        textPane.add(p);        
+        textPane.add(Box.createRigidArea(new Dimension(0, 5)));
+        
+        p = new JPanel(new BorderLayout());
+        p.add(comboSeverityLabel, BorderLayout.NORTH);
+        p.add(fComboSeverity);
+        textPane.add(p);        
+        textPane.add(Box.createRigidArea(new Dimension(0, 5)));
+        
+        p = new JPanel(new BorderLayout());
+        p.add(comboContextLabel, BorderLayout.NORTH);
+        p.add(fComboContext);
+        textPane.add(p);        
         textPane.add(Box.createRigidArea(new Dimension(0, 5)));
         
         p = new JPanel(new BorderLayout());;
@@ -187,14 +217,14 @@ public class AddNewQualityProperty extends JDialog {
         btnEval.addActionListener(new ActionListener() {
             @Override
 			public void actionPerformed(ActionEvent e) {         	
-            		btnAdd.setEnabled(evaluate(fTextIn.getText(), false));
+            		btnAdd.setEnabled(evaluate(createEvaluationOCL(fComboContext.getSelectedItem().toString(), fTextIn.getText()) , false));
             }
         });
         Dimension dim = btnEval.getMaximumSize();
         dim.width = Short.MAX_VALUE;
         btnEval.setMaximumSize(dim);
         
-        btnAdd = new JButton("Add to Lib");
+        btnAdd = new JButton("Add to Library");
         btnAdd.setMnemonic('A');
         btnAdd.addActionListener(new ActionListener() {
 			
@@ -203,7 +233,8 @@ public class AddNewQualityProperty extends JDialog {
 				if(fTextName.getText().trim().equals(""))
 					JOptionPane.showMessageDialog(null,"The name of the property can be empty!");
 				else
-					addNewPropertytoXMLFile(fTextName.getText(), fComboType.getSelectedItem().toString(), fTextIn.getText());			
+					addNewPropertytoXMLFile(fTextName.getText(), fComboType.getSelectedItem().toString(),
+							fComboSeverity.getSelectedItem().toString(), fComboContext.getSelectedItem().toString(), fTextIn.getText());			
 			}
 		});
         dim = btnAdd.getMaximumSize();
@@ -251,7 +282,7 @@ public class AddNewQualityProperty extends JDialog {
         getRootPane().setDefaultButton(btnEval);
 
         pack();
-        setSize(new Dimension(450, 280));
+        setSize(new Dimension(600, 400));
         setLocationRelativeTo(parent);
         fTextIn.requestFocus();
 
@@ -336,31 +367,47 @@ public class AddNewQualityProperty extends JDialog {
 	/*
 	 * add new property to XML library file
 	 */
-	private void addNewPropertytoXMLFile(String name, String type, String oclExp){
+	private void addNewPropertytoXMLFile(String name, String type, String severity, String context, String oclExp){
 		try {
 			//Open and read the xml file
 			Path homeDir = Paths.get(System.getProperty("user.dir")); 
-			File xmlFile = homeDir.resolve("metamodels").resolve("QualityProperties.xml").toFile();
+			File xmlFile = homeDir.resolve("metamodels").resolve("DesignSmells.xml").toFile();
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(xmlFile);
 			
 			//create new property
 			Element eDataTag = doc.getDocumentElement();
-			Element eNewProperty = doc.createElement("Property");
+			Element eNewProperty = doc.createElement("DesignSmell");
 			
 			Element eName = doc.createElement("Name");
 			eName.setTextContent(name);
 			
+			Element eDesc = doc.createElement("Desc");
+			eDesc.setTextContent("");
+			
 			Element eType = doc.createElement("Type");
 			eType.setTextContent(type);
 			
-			Element eOclExp = doc.createElement("OClExpression");
-			eOclExp.setTextContent(oclExp);
+			Element eSeverity = doc.createElement("Severity");
+			eSeverity.setTextContent(name);
+			
+			Element eEvalExp = doc.createElement("OClExpression");
+			eEvalExp.setTextContent(createEvaluationOCL(context,oclExp));
+			
+			Element eSelExp = doc.createElement("SelectExpression");
+			eSelExp.setTextContent(createSelectionOCL(context,oclExp));
+			
+			Element eContext = doc.createElement("Context");
+			eContext.setTextContent(context);
 			
 			eNewProperty.appendChild(eName);
+			eNewProperty.appendChild(eDesc);
 			eNewProperty.appendChild(eType);
-			eNewProperty.appendChild(eOclExp);
+			eNewProperty.appendChild(eEvalExp);
+			eNewProperty.appendChild(eSelExp);
+			eNewProperty.appendChild(eContext);
+			
 			eDataTag.appendChild(eNewProperty);
 			
 			//Save to xml file
@@ -371,9 +418,22 @@ public class AddNewQualityProperty extends JDialog {
 		    StreamResult result = new StreamResult(xmlFile);
 		    transformer.transform(source, result);
 		    
+		    JOptionPane.showMessageDialog(null,"New design smell is successfully added to the library!");
 		} catch (Exception e) {
-	         e.printStackTrace();}
+			JOptionPane.showMessageDialog(null,"Fail to add new design smell to the library!");
+	        e.printStackTrace();}
 	}
+	
+	private String createEvaluationOCL(String context, String smellDefinition)
+	{
+		return context + ".allInstances()->exists(x|" + smellDefinition + ")";
+	}
+	
+	private String createSelectionOCL(String context, String smellDefinition)
+	{
+		return context + ".allInstances()->select(x|" + smellDefinition + ")";
+	}
+	
 	
 	private void closeDialog() {
         setVisible(false);

@@ -1734,13 +1734,13 @@ public class MainWindow extends JFrame {
     
     private class ActionQualityPropertiesEvaluation extends AbstractAction{
     	ActionQualityPropertiesEvaluation() {
-            super("Quality Properties Evaluation", getIcon("propertycheck.png"));
+            super("Design smells evaluation", getIcon("propertycheck.png"));
         }
 
         @Override
 		public void actionPerformed(ActionEvent e) {
         	QualityPropertiesEval civ = new QualityPropertiesEval(MainWindow.this, fSession);
-            ViewFrame f = new ViewFrame("Quality Properties Evaluation", civ, "InvariantView.gif");
+            ViewFrame f = new ViewFrame("Smells Evaluation", civ, "InvariantView.gif");
             JComponent c = (JComponent) f.getContentPane();
             c.setLayout(new BorderLayout());
             c.add(civ, BorderLayout.CENTER);

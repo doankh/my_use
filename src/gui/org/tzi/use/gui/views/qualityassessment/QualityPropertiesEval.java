@@ -36,11 +36,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.RowFilter;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
 import javax.swing.table.AbstractTableModel;
@@ -107,19 +111,18 @@ public class QualityPropertiesEval extends JPanel implements View {
 		List<QualityProperty> propertyList = loadPropertyLibrary();
 		tableModel.setList(propertyList);
 		
-		tblPropertiesEval.removeColumn(tblPropertiesEval.getColumnModel().getColumn(2));
 		//A JTable must be in a JScrollPane so that the Header will be shown
 		JScrollPane scrollPane = new JScrollPane(tblPropertiesEval, 
                                         JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                                         JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		
 		
-		scrollPane.setPreferredSize(this.getPreferredSize());
+		scrollPane.setPreferredSize(new Dimension(750,450));
 		
 		tblPropertiesEval.setPreferredScrollableViewportSize(new Dimension(350, 450));
 		
-		// center align the satisfiability column
-		TableColumn column = tblPropertiesEval.getColumnModel().getColumn(2);		
+		// center align the satisfiability column (column 3)
+		TableColumn column = tblPropertiesEval.getColumnModel().getColumn(3);		
 		DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
       	renderer.setHorizontalAlignment(JLabel.CENTER);
       	column.setCellRenderer(renderer);
@@ -141,15 +144,35 @@ public class QualityPropertiesEval extends JPanel implements View {
 		add(scrollPane, BorderLayout.CENTER);
 		JPanel bottomPanel = new JPanel(new BorderLayout());
 		
+		//summary info panel
+		JPanel infoPanel = new JPanel();
+		infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS) );
 		//print summary info, i.e., number of the unsatisfiable properties
+		final JCheckBox ckViewUnsatisfiedOnly = new JCheckBox("View only violated smells");
+		ckViewUnsatisfiedOnly.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(ckViewUnsatisfiedOnly.isSelected())
+					sorter.setRowFilter(RowFilter.regexFilter("true", 3));
+				else
+					sorter.setRowFilter(null);
+			}
+		});
+		infoPanel.add(ckViewUnsatisfiedOnly);
+		infoPanel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
+		
 		JLabel lblInfo = new JLabel();
-		lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " quality smell(s) found. </html>");
+		lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " quality smell(s) found. Double click on the corresponding smell row to see the detail.</html>");
 		lblInfo.setForeground(Color.RED);
-		bottomPanel.add(lblInfo,BorderLayout.NORTH);
+		infoPanel.add(lblInfo);
+		
+		
+		bottomPanel.add(infoPanel,BorderLayout.NORTH);
 		
 		//button Addnew
 		JPanel btnPanel = new JPanel(new FlowLayout());
-		btnAddNew = new JButton("Add New Property");
+		btnAddNew = new JButton("Add New Smell");
 		btnAddNew.addActionListener(new ActionListener() {
 			
 			@Override
@@ -178,6 +201,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 		add(bottomPanel, BorderLayout.SOUTH);
 	}
 	
+		
 	//Load property library defined in an XML file
 	public List<QualityProperty> loadPropertyLibrary(){
 		List<QualityProperty> result = new ArrayList<QualityProperty>();
@@ -198,9 +222,10 @@ public class QualityPropertiesEval extends JPanel implements View {
 							eElement.getElementsByTagName("Name").item(0).getTextContent(),
 							eElement.getElementsByTagName("Desc").item(0).getTextContent(),
 							eElement.getElementsByTagName("Type").item(0).getTextContent(),
+							eElement.getElementsByTagName("Severity").item(0).getTextContent(),
 							eElement.getElementsByTagName("OCLexpression").item(0).getTextContent(),
 							eElement.getElementsByTagName("SelectExpression").item(0).getTextContent(),
-							eElement.getElementsByTagName("ViolatingElement").item(0).getTextContent());
+							eElement.getElementsByTagName("Context").item(0).getTextContent());
 					
 					String errFilename = homeDir.resolve("metamodels").resolve("QualityPropertiesEvalLog.txt").toAbsolutePath().toString();
 					
@@ -267,19 +292,21 @@ class QualityProperty{
 	private String name;
 	private String desc;
 	private String type;
+	private String severity;
 	private String oclExpression;
 	private String selectExpression;
-	private String violatingElement;
+	private String context;
 	private Boolean evaluation;
 	private Boolean isValidOclExpression;
 	
-	public QualityProperty(String sName, String sDecs, String sType, String sOclExpression, String sSelectExpression, String sViolatingElement){
+	public QualityProperty(String sName, String sDecs, String sType, String sSeverity, String sOclExpression, String sSelectExpression, String sContext){
 		this.name = sName;
 		this.desc = sDecs;
 		this.type = sType;
+		this.severity = sSeverity;
 		this.oclExpression = sOclExpression;
 		this.selectExpression = sSelectExpression;
-		this.violatingElement = sViolatingElement;
+		this.context = sContext;
 	}
 
 	/**
@@ -323,6 +350,19 @@ class QualityProperty{
 	public void setType(String type) {
 		this.type = type;
 	}
+	/**
+	 * @return the severity
+	 */
+	public String getSeverity() {
+		return severity;
+	}
+
+	/**
+	 * @param name the name to set
+	 */
+	public void setSeverity(String severity) {
+		this.severity = severity;
+	}
 
 	/**
 	 * @return the oclExpression
@@ -355,15 +395,15 @@ class QualityProperty{
 	/**
 	 * @return the violatingElement
 	 */
-	public String getViolatingElement() {
-		return violatingElement;
+	public String getContext() {
+		return context;
 	}
 
 	/**
 	 * @param violatingElement the violatingElement to set
 	 */
-	public void setViolatingElement(String violatingElement) {
-		this.violatingElement = violatingElement;
+	public void setContext(String context) {
+		this.context = context;
 	}
 
 	/**
@@ -402,7 +442,7 @@ class QualityProperty{
 @SuppressWarnings("serial")
 class PropertyEvaluationTableModel extends AbstractTableModel {
     private List<QualityProperty> list = new ArrayList<QualityProperty>();
-	private final String[] columnNames = { "Design Smell", "Type", "OCL Expression", "Evaluation" };
+	private final String[] columnNames = { "Design Smell", "Type", "Severity", "Evaluation" };
 
     public void setList(List<QualityProperty> data) {
         this.list = data;
@@ -435,7 +475,7 @@ class PropertyEvaluationTableModel extends AbstractTableModel {
         case 1:
             return list.get(rowIndex).getType();
         case 2:
-        	return list.get(rowIndex).getOclExpression();
+        	return list.get(rowIndex).getSeverity();
         case 3:
         	StringBuilder text = new StringBuilder();
         	text.append("<html><font color='");
