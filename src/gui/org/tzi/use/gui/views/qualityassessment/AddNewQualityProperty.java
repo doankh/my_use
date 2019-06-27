@@ -80,6 +80,8 @@ public class AddNewQualityProperty extends JDialog {
 	
 	private final JTextArea fTextName;
 	
+	private final JTextArea fTextDecs;
+	
 	private final JComboBox fComboType;
 	
 	private final JComboBox fComboContext;
@@ -133,7 +135,7 @@ public class AddNewQualityProperty extends JDialog {
 				btnAdd.setEnabled(false);				
 			}
 		});
-        JLabel textInLabel = new JLabel("Enter OCL expression:");
+        JLabel textInLabel = new JLabel("<html>Enter smell definition:<br/><b>Context e: Class</b><html>");
         textInLabel.setDisplayedMnemonic('O');
         textInLabel.setLabelFor(fTextIn);
         
@@ -141,6 +143,12 @@ public class AddNewQualityProperty extends JDialog {
         fTextName.setFont(evalFont);
         JLabel textNamelabel = new JLabel("Property name:");
         textNamelabel.setLabelFor(fTextName);
+        
+        fTextDecs = new JTextArea(10,50);
+        fTextDecs.setLineWrap(true);
+        fTextDecs.setFont(evalFont);
+        JLabel textDecslabel = new JLabel("Description:");
+        textDecslabel.setLabelFor(fTextDecs);
         
         String[] types = {"Design","Metrics","Naming convention"};
         fComboType = new JComboBox(types);
@@ -157,6 +165,14 @@ public class AddNewQualityProperty extends JDialog {
         String[] context = {"Class","Association","Generalization","Property","Operation"};
         fComboContext = new JComboBox(context);
         fComboContext.setSelectedIndex(0);
+        fComboContext.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String context = fComboContext.getSelectedItem().toString();
+				textInLabel.setText("<html>Enter smell definition:<br/><b>Context e: " + context + "</b><html>");
+			}
+		});
         JLabel comboContextLabel = new JLabel("Context:");
         comboContextLabel.setLabelFor(fComboContext);
         
@@ -175,6 +191,12 @@ public class AddNewQualityProperty extends JDialog {
         JPanel p = new JPanel(new BorderLayout());
         p.add(textNamelabel, BorderLayout.NORTH);
         p.add(new JScrollPane(fTextName), BorderLayout.CENTER);
+        textPane.add(p);
+        textPane.add(Box.createRigidArea(new Dimension(0, 5)));
+        
+        p = new JPanel(new BorderLayout());
+        p.add(textDecslabel, BorderLayout.NORTH);
+        p.add(new JScrollPane(fTextDecs), BorderLayout.CENTER);
         textPane.add(p);
         textPane.add(Box.createRigidArea(new Dimension(0, 5)));
         
@@ -233,7 +255,7 @@ public class AddNewQualityProperty extends JDialog {
 				if(fTextName.getText().trim().equals(""))
 					JOptionPane.showMessageDialog(null,"The name of the property can be empty!");
 				else
-					addNewPropertytoXMLFile(fTextName.getText(), fComboType.getSelectedItem().toString(),
+					addNewPropertytoXMLFile(fTextName.getText(), fTextDecs.getText(), fComboType.getSelectedItem().toString(),
 							fComboSeverity.getSelectedItem().toString(), fComboContext.getSelectedItem().toString(), fTextIn.getText());			
 			}
 		});
@@ -367,7 +389,7 @@ public class AddNewQualityProperty extends JDialog {
 	/*
 	 * add new property to XML library file
 	 */
-	private void addNewPropertytoXMLFile(String name, String type, String severity, String context, String oclExp){
+	private void addNewPropertytoXMLFile(String name, String decs, String type, String severity, String context, String oclExp){
 		try {
 			//Open and read the xml file
 			Path homeDir = Paths.get(System.getProperty("user.dir")); 
@@ -383,16 +405,16 @@ public class AddNewQualityProperty extends JDialog {
 			Element eName = doc.createElement("Name");
 			eName.setTextContent(name);
 			
-			Element eDesc = doc.createElement("Desc");
-			eDesc.setTextContent("");
+			Element eDesc = doc.createElement("Desc"); 
+			eDesc.setTextContent(decs);
 			
 			Element eType = doc.createElement("Type");
 			eType.setTextContent(type);
 			
 			Element eSeverity = doc.createElement("Severity");
-			eSeverity.setTextContent(name);
+			eSeverity.setTextContent(severity);
 			
-			Element eEvalExp = doc.createElement("OClExpression");
+			Element eEvalExp = doc.createElement("OCLexpression");
 			eEvalExp.setTextContent(createEvaluationOCL(context,oclExp));
 			
 			Element eSelExp = doc.createElement("SelectExpression");
@@ -404,6 +426,7 @@ public class AddNewQualityProperty extends JDialog {
 			eNewProperty.appendChild(eName);
 			eNewProperty.appendChild(eDesc);
 			eNewProperty.appendChild(eType);
+			eNewProperty.appendChild(eSeverity);
 			eNewProperty.appendChild(eEvalExp);
 			eNewProperty.appendChild(eSelExp);
 			eNewProperty.appendChild(eContext);
@@ -426,12 +449,12 @@ public class AddNewQualityProperty extends JDialog {
 	
 	private String createEvaluationOCL(String context, String smellDefinition)
 	{
-		return context + ".allInstances()->exists(x|" + smellDefinition + ")";
+		return context + ".allInstances()->exists(e|" + smellDefinition + ")";
 	}
 	
 	private String createSelectionOCL(String context, String smellDefinition)
 	{
-		return context + ".allInstances()->select(x|" + smellDefinition + ")";
+		return context + ".allInstances()->select(e|" + smellDefinition + ")";
 	}
 	
 	

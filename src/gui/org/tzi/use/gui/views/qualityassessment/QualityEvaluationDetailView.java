@@ -75,8 +75,6 @@ public class QualityEvaluationDetailView extends JDialog {
 
 private Evaluator evaluator;
 	
-	private final JPanel contentPanel = new JPanel();
-	
 	private final JTextArea fTextName;
 	private final JTextArea fTextType;
 	private final JTextArea fTextSeverity;

@@ -114,6 +114,7 @@ import org.tzi.use.gui.views.diagrams.classdiagram.MClassDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewMetaObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.statemachine.StateMachineDiagramView;
+import org.tzi.use.gui.views.qualityassessment.MetricMeasurement;
 import org.tzi.use.gui.views.qualityassessment.MetricsEvaluation;
 import org.tzi.use.gui.views.qualityassessment.QualityPropertiesEval;
 import org.tzi.use.main.ChangeEvent;
@@ -461,7 +462,7 @@ public class MainWindow extends JFrame {
         menu.setEnabled(false);
 		fMenuBar.add(menu);
 		mi = menu.add(new ActionViewCreateClassDiagram(true, false, "Full Metamodel class diagram", ""));
-		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified class diagram", ""));
+		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified Metamodel class diagram", ""));
 		
 		submenu = new JMenu("Sub Metamodel class diagrams");
 		submenu.setMnemonic('s');
@@ -476,8 +477,8 @@ public class MainWindow extends JFrame {
         mi = menu.add(fActionGenerateMetamodelObjectDiagram);
         
         menu.addSeparator();
-        mi = menu.add(fActionMetricsEvaluation);
-
+        mi = menu.add(fActionMetricsMeasurment);
+        mi = menu.add(fActionMetricsEvaluation);     
         mi = menu.add(fActionPopertiesEvaluation);
         
         // create the browser panel
@@ -1082,6 +1083,8 @@ public class MainWindow extends JFrame {
     
     //metamodel object diagram
     private final ActionViewCreateObjectDiagram fActionGenerateMetamodelObjectDiagram = new ActionViewCreateObjectDiagram(true);
+    
+    private final ActionMetricsMeasurement fActionMetricsMeasurment = new ActionMetricsMeasurement();
     
     private final ActionMetricsEvaluation fActionMetricsEvaluation = new ActionMetricsEvaluation();
     
@@ -1714,17 +1717,32 @@ public class MainWindow extends JFrame {
         }
     }
     /*
+     * Opens a new window for metrics measurement
+     */
+    private class ActionMetricsMeasurement extends AbstractAction {
+    	ActionMetricsMeasurement() {
+            super("Model metric measurement", getIcon("metric_measurement.png"));
+        }
+
+        @Override
+		public void actionPerformed(ActionEvent e) {
+        	MetricMeasurement metricDlg = new MetricMeasurement(MainWindow.this, fSession);
+        	metricDlg.setVisible(true);
+        }
+    }
+    
+    /*
      * Opens a new window for metrics evaluation
      */
     private class ActionMetricsEvaluation extends AbstractAction {
     	ActionMetricsEvaluation() {
-            super("Model Metrics Evaluation", getIcon("metric_evaluation.png"));
+            super("Model metric evaluation", getIcon("metric_evaluation.png"));
         }
 
         @Override
 		public void actionPerformed(ActionEvent e) {
             MetricsEvaluation civ = new MetricsEvaluation(MainWindow.this, fSession);
-            ViewFrame f = new ViewFrame("Model Metrics Evaluation", civ, "InvariantView.gif");
+            ViewFrame f = new ViewFrame("Model metric evaluation", civ, "InvariantView.gif");
             JComponent c = (JComponent) f.getContentPane();
             c.setLayout(new BorderLayout());
             c.add(civ, BorderLayout.CENTER);
@@ -1732,15 +1750,18 @@ public class MainWindow extends JFrame {
         }
     }
     
+    /*
+     * Opens a new window for smell detection
+     */
     private class ActionQualityPropertiesEvaluation extends AbstractAction{
     	ActionQualityPropertiesEvaluation() {
-            super("Design smells evaluation", getIcon("propertycheck.png"));
+            super("Design smells detection", getIcon("propertycheck.png"));
         }
 
         @Override
 		public void actionPerformed(ActionEvent e) {
         	QualityPropertiesEval civ = new QualityPropertiesEval(MainWindow.this, fSession);
-            ViewFrame f = new ViewFrame("Smells Evaluation", civ, "InvariantView.gif");
+            ViewFrame f = new ViewFrame("Smells Detection", civ, "InvariantView.gif");
             JComponent c = (JComponent) f.getContentPane();
             c.setLayout(new BorderLayout());
             c.add(civ, BorderLayout.CENTER);
