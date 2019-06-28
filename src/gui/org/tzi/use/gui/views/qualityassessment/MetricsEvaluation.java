@@ -32,9 +32,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +50,6 @@ import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.gui.util.ExtFileFilter;
 import org.tzi.use.gui.views.View;
 import org.tzi.use.main.Session;
-import org.tzi.use.parser.ocl.OCLCompiler;
 import org.tzi.use.uml.mm.MMetricEvaluationSetting;
 import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
@@ -127,22 +124,9 @@ public class MetricsEvaluation extends JPanel implements View{
 							
 						}
 						evaluationInv = config.createEvaluationInvariant();
-						String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
-								
-						PrintWriter out = new PrintWriter(errFilename);
-
-				        
-				        // compile invariant
-				        Expression expr = OCLCompiler.compileExpression(
-				        		metaSystem.model(),
-				        		metaSystem.state(),
-				        		evaluationInv, 
-				                "Error", 
-				                out, 
-				                metaSystem.varBindings());
-				        	        
-				        out.flush();
-				        
+						
+						Expression expr = Util.compileMetaOCLExpr(metaSystem, evaluationInv);
+						
 				        try {
 				            // evaluate it with current system state
 				            evaluator = new Evaluator(true);

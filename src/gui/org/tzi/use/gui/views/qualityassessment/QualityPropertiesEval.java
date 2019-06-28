@@ -30,7 +30,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -59,7 +58,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.gui.views.View;
 import org.tzi.use.main.Session;
-import org.tzi.use.parser.ocl.OCLCompiler;
 import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
@@ -226,23 +224,8 @@ public class QualityPropertiesEval extends JPanel implements View {
 							eElement.getElementsByTagName("OCLexpression").item(0).getTextContent(),
 							eElement.getElementsByTagName("SelectExpression").item(0).getTextContent(),
 							eElement.getElementsByTagName("Context").item(0).getTextContent());
-					
-					String errFilename = homeDir.resolve("metamodels").resolve("QualityPropertiesEvalLog.txt").toAbsolutePath().toString();
-					
-					PrintWriter out = new PrintWriter(errFilename);
-
-			        
-			        // compile invariant
-			        Expression expr = OCLCompiler.compileExpression(
-			        		metaSystem.model(),
-			        		metaSystem.state(),
-			        		property.getOclExpression(), 
-			                "Error", 
-			                out, 
-			                metaSystem.varBindings());
-			        	        
-			        out.flush();
-			        
+					        	        
+			        Expression expr = Util.compileMetaOCLExpr(metaSystem, property.getOclExpression());
 			        try {
 			        	if(expr == null) //if there is an error in compiling the Ocl expression
 			        		property.setIsValidOclExpression(false);

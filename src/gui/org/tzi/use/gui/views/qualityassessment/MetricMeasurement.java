@@ -39,12 +39,16 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumnModel;
 
 import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.main.Session;
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.mm.MOperation;
 import org.tzi.use.uml.ocl.expr.Evaluator;
+import org.tzi.use.uml.ocl.expr.Expression;
+import org.tzi.use.uml.ocl.value.Value;
 import org.tzi.use.uml.sys.MSystem;
 
 /**
@@ -76,8 +80,8 @@ public class MetricMeasurement extends JDialog {
 		// Define the panel to hold the buttons 
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new FlowLayout());
-        JLabel lblclassList = new JLabel("Select a Class: ");
-        topPanel.add(lblclassList);
+        JLabel lblClassList = new JLabel("Select a Class: ");
+        topPanel.add(lblClassList);
         
         //populate items to the combobox
         fComboClassList = new JComboBox<Object>();
@@ -95,7 +99,7 @@ public class MetricMeasurement extends JDialog {
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
 				
-				/*List<Metric> metrics = new ArrayList<Metric>();
+				List<Metric> metrics = new ArrayList<Metric>();
 				if(fComboClassList.getSelectedIndex()==0)
 					metrics = loadModelMetrics();
 				else
@@ -104,12 +108,19 @@ public class MetricMeasurement extends JDialog {
 					MClass cls = system.model().getClass(clsName.substring(0, clsName.length()-5));
 					if(cls != null) metrics = loadClassMetrics(cls);
 				}
-				tableModel.setList(metrics);*/
+				tableModel.setList(metrics);
 			}
 		});
         topPanel.add(btnView);
         
-        //tblMetricList.setModel(tableModel);
+        //set model and other properties for the JTable
+        tblMetricList = new JTable();
+        tblMetricList.setModel(tableModel);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
+		for(int i=0;i<tblMetricList.getColumnCount();i++)
+			tblMetricList.getColumnModel().getColumn(i).setCellRenderer( centerRenderer );
+        
         
         JScrollPane scrollPane = new JScrollPane(tblMetricList, 
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
@@ -117,6 +128,11 @@ public class MetricMeasurement extends JDialog {
 
         
         scrollPane.setPreferredSize(new Dimension(750,450));
+        
+       	//set the table column widths
+       	/*int[] columnWidths = {100,300,150,100};
+       	setTableColumnWidths(columnWidths);*/
+        
         
         JComponent contentPane = (JComponent) getContentPane();
         contentPane.add(topPanel,BorderLayout.NORTH);
@@ -126,6 +142,13 @@ public class MetricMeasurement extends JDialog {
         pack();
         setSize(new Dimension(400, 400));
         setLocationRelativeTo(parent);
+	}
+	
+	private void setTableColumnWidths(int[] columnWidths) {
+	    TableColumnModel columnModel = tblMetricList.getColumnModel();
+	    for (int i = 0; i < columnModel.getColumnCount(); i++) {       
+	            columnModel.getColumn(i).setPreferredWidth(columnWidths[i]);
+	    }
 	}
 	
 	/**
@@ -146,12 +169,17 @@ public class MetricMeasurement extends JDialog {
 		MClass cls = metaSystem.model().getClass("ModelMetrics");
 		for(MOperation op: cls.operations())
 		{
-			Metric metric = new Metric();
-			metric.shortName = op.name();
-			metric.name = "";
-			metric.description = "";
-			metric.scope ="Model";
-			metric.type ="";
+			double value=-1.0;
+			Expression expr = Util.compileMetaOCLExpr(metaSystem, "ModelMetrics." + op.name() + "()");
+			if(expr != null)
+			{
+				evaluator = new Evaluator(true);
+	            Value val = evaluator.eval(expr, metaSystem.state(),metaSystem.varBindings());
+	            if(val.isInteger() || val.isReal())
+	            	value = Double.parseDouble(val.toString());
+			}	
+			Metric metric = new Metric(op.name(),"","","Model","",value);
+			metrics.add(metric);
 		}
 		return metrics;
 	}
@@ -164,135 +192,155 @@ public class MetricMeasurement extends JDialog {
 		return classes;
 	}
 	
-	/*
-	 * The Table model to display the list of metrics
-	 */ 
-	@SuppressWarnings("serial")
-	class MetricMeasurementTableModel extends AbstractTableModel {
-	    private List<Metric> list = new ArrayList<Metric>();
-		private final String[] columnNames = { "Design Smell", "Type", "Severity", "Evaluation" };
+}
 
-	    public void setList(List<Metric> data) {
-	        this.list = data;
-	        fireTableDataChanged();
-	    }
-	    
-	    public Metric getDataItem(int row){
-	    	return list.get(row);
-	    }
-	    
-	    
-	    @Override
-		public String getColumnName(int col) {
-	        return columnNames[col];
-	    }
-	    
-	    public int getRowCount() {
-	        return list.size();
-	    }
+/*
+ * The Table model to display the list of metrics
+ */ 
+@SuppressWarnings("serial")
+class MetricMeasurementTableModel extends AbstractTableModel {
+    private List<Metric> list = new ArrayList<Metric>();
+	private final String[] columnNames = { "Short Name", "Name", "Type", "Value" };
+	
+    public void setList(List<Metric> data) {
+        this.list = data;
+        fireTableDataChanged();
+    }
+    
+    public Metric getDataItem(int row){
+    	return list.get(row);
+    }
+    
+    
+    @Override
+	public String getColumnName(int col) {
+        return columnNames[col];
+    }
+    
+    public int getRowCount() {
+        return list.size();
+    }
 
-	    public int getColumnCount() {
-	        return columnNames.length;
-	    }
-	    
-	    @Override
-	    public Object getValueAt(int rowIndex, int columnIndex) {
-	        switch (columnIndex) {
-	        case 0:
-	            return list.get(rowIndex).getShortName();
-	        case 1:
-	            return list.get(rowIndex).getName();
-	        case 2:
-	        	return list.get(rowIndex).getType();
-	        
-	        default:
-	            return null;
-	        }
-	    }
-	}
-	/*
-	 * data class for 
+    public int getColumnCount() {
+        return columnNames.length;
+    }
+    
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex) {
+        switch (columnIndex) {
+        case 0:
+            return list.get(rowIndex).getShortName();
+        case 1:
+            return list.get(rowIndex).getName();
+        case 2:
+        	return list.get(rowIndex).getType();
+        case 3:
+        	
+        	return String.format("%.2f", list.get(rowIndex).getValue());
+        default:
+            return null;
+        }
+    }
+}
+/*
+ * data class for Metric
+ */
+class Metric{
+	/**
+	 * @param shortName
+	 * @param name
+	 * @param description
+	 * @param type
+	 * @param scope
+	 * @param value
 	 */
-	class Metric{
-		private String shortName;
-		private String name;
-		private String description;
-		private String type;
-		private String scope;
-		private Double value;
-		
-		/**
-		 * @return the shortName
-		 */
-		public String getShortName() {
-			return shortName;
-		}
-		/**
-		 * @param shortName the shortName to set
-		 */
-		public void setShortName(String shortName) {
-			this.shortName = shortName;
-		}
-		/**
-		 * @return the name
-		 */
-		public String getName() {
-			return name;
-		}
-		/**
-		 * @param name the name to set
-		 */
-		public void setName(String name) {
-			this.name = name;
-		}
-		/**
-		 * @return the description
-		 */
-		public String getDescription() {
-			return description;
-		}
-		/**
-		 * @param description the description to set
-		 */
-		public void setDescription(String description) {
-			this.description = description;
-		}
-		/**
-		 * @return the type
-		 */
-		public String getType() {
-			return type;
-		}
-		/**
-		 * @param type the type to set
-		 */
-		public void setType(String type) {
-			this.type = type;
-		}
-		/**
-		 * @return the scope
-		 */
-		public String getScope() {
-			return scope;
-		}
-		/**
-		 * @param scope the scope to set
-		 */
-		public void setScope(String scope) {
-			this.scope = scope;
-		}
-		/**
-		 * @return the value
-		 */
-		public Double getValue() {
-			return value;
-		}
-		/**
-		 * @param value the value to set
-		 */
-		public void setValue(Double value) {
-			this.value = value;
-		}
-		
+	public Metric(String shortName, String name, String description, String type, String scope, double value) {
+		super();
+		this.shortName = shortName;
+		this.name = name;
+		this.description = description;
+		this.type = type;
+		this.scope = scope;
+		this.value = value;
 	}
+	private String shortName;
+	private String name;
+	private String description;
+	private String type;
+	private String scope;
+	private double value;
+	
+	/**
+	 * @return the shortName
+	 */
+	public String getShortName() {
+		return shortName;
+	}
+	/**
+	 * @param shortName the shortName to set
+	 */
+	public void setShortName(String shortName) {
+		this.shortName = shortName;
+	}
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
+	/**
+	 * @param name the name to set
+	 */
+	public void setName(String name) {
+		this.name = name;
+	}
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	/**
+	 * @return the type
+	 */
+	public String getType() {
+		return type;
+	}
+	/**
+	 * @param type the type to set
+	 */
+	public void setType(String type) {
+		this.type = type;
+	}
+	/**
+	 * @return the scope
+	 */
+	public String getScope() {
+		return scope;
+	}
+	/**
+	 * @param scope the scope to set
+	 */
+	public void setScope(String scope) {
+		this.scope = scope;
+	}
+	/**
+	 * @return the value
+	 */
+	public double getValue() {
+		return value;
+	}
+	/**
+	 * @param value the value to set
+	 */
+	public void setValue(double value) {
+		this.value = value;
+	}
+	
 }
