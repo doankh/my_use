@@ -138,17 +138,22 @@ public class MetricsEvaluation extends JPanel implements View{
 							evaluationInv = config.createEvaluationInvariant();
 							
 							Expression expr = Util.compileMetaOCLExpr(metaSystem, evaluationInv);
-							
-					        try {
-					            // evaluate it with current system state
-					            evaluator = new Evaluator(true);
-					            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
-					            // print result
-					            config.setSatisfaction(Boolean.parseBoolean(val.toString()));
-					        } catch (MultiplicityViolationException e) {
-					            
-					        }
-					        configList.add(config);
+							if(expr!= null)
+						        try {
+						            // evaluate it with current system state
+						            evaluator = new Evaluator(true);
+						            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
+						            // print result
+						            config.setSatisfaction(Boolean.parseBoolean(val.toString()));
+						            configList.add(config);
+						        } catch (MultiplicityViolationException e) {
+						        	 
+						        }
+							else
+							{
+								checkError = false;
+								parent.logWriter().println("Setting " + settingNo + ": unable to evaluate!" );
+							}
 						}
 						else
 							checkError = false;
