@@ -123,7 +123,7 @@ public class MMInstanceGenerator implements MMVisitor {
         	soilCommand = soilCommand + "none";
             break;
         case MAggregationKind.AGGREGATION:
-        	soilCommand = soilCommand + "aggregate";
+        	soilCommand = soilCommand + "shared";
             break;
         case MAggregationKind.COMPOSITION:
         	soilCommand = soilCommand + "composite";

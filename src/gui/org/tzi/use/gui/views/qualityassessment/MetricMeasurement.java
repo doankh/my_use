@@ -27,8 +27,13 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -41,6 +46,8 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.main.Session;
@@ -50,6 +57,10 @@ import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.ocl.value.Value;
 import org.tzi.use.uml.sys.MSystem;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * TODO
@@ -67,6 +78,7 @@ public class MetricMeasurement extends JDialog {
 	private JTable tblMetricList;
 	private JButton btnView;
 	private final JComboBox fComboClassList;
+	private Map<String, Metric> metricData;
 	private MetricMeasurementTableModel tableModel = new MetricMeasurementTableModel();
 	
 	@SuppressWarnings("unchecked")
@@ -74,6 +86,8 @@ public class MetricMeasurement extends JDialog {
 		super(parent, "Class model metric measurement");
 		metaSystem = fSession.metaSystem();
 		system = fSession.system();
+		
+		initMetricData();
 		
 		setLayout(new BorderLayout());
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -105,7 +119,7 @@ public class MetricMeasurement extends JDialog {
 				else
 				{
 					String clsName = fComboClassList.getSelectedItem().toString();
-					MClass cls = system.model().getClass(clsName.substring(0, clsName.length()-5));
+					MClass cls = system.model().getClass(clsName.substring(0, clsName.length()-6));
 					if(cls != null) metrics = loadClassMetrics(cls);
 				}
 				tableModel.setList(metrics);
@@ -117,10 +131,15 @@ public class MetricMeasurement extends JDialog {
         tblMetricList = new JTable();
         tblMetricList.setModel(tableModel);
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
+		leftRenderer.setHorizontalAlignment(JLabel.LEFT);
 		for(int i=0;i<tblMetricList.getColumnCount();i++)
+		if(i==1)
+			tblMetricList.getColumnModel().getColumn(i).setCellRenderer( leftRenderer );
+		else
 			tblMetricList.getColumnModel().getColumn(i).setCellRenderer( centerRenderer );
-        
+		
         
         JScrollPane scrollPane = new JScrollPane(tblMetricList, 
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
@@ -130,8 +149,8 @@ public class MetricMeasurement extends JDialog {
         scrollPane.setPreferredSize(new Dimension(750,450));
         
        	//set the table column widths
-       	/*int[] columnWidths = {100,300,150,100};
-       	setTableColumnWidths(columnWidths);*/
+       	int[] columnWidths = {70,330,120,80};
+       	setTableColumnWidths(columnWidths);
         
         
         JComponent contentPane = (JComponent) getContentPane();
@@ -140,10 +159,47 @@ public class MetricMeasurement extends JDialog {
         getRootPane().setDefaultButton(btnView);
         
         pack();
-        setSize(new Dimension(400, 400));
+        setSize(new Dimension(600, 500));
         setLocationRelativeTo(parent);
 	}
 	
+	/**
+	 * Read data of the defined metrics from a XML file
+	 */
+	private void initMetricData() {
+		metricData = new HashMap<String,Metric>();
+		try {
+			Path homeDir = Paths.get(System.getProperty("user.dir")); 
+			File xmlFile = homeDir.resolve("metamodels").resolve("Metrics.xml").toFile();
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.parse(xmlFile);
+			NodeList nList = doc.getElementsByTagName("Metric");
+			for(int i=0; i<nList.getLength(); i++)
+			{				
+				Node nNode = nList.item(i);
+				if(nNode.getNodeType() == Node.ELEMENT_NODE)
+				{
+					Element eElement = (Element) nNode;
+					String shortName = eElement.getElementsByTagName("ShortName").item(0).getTextContent();
+					String scope = eElement.getElementsByTagName("Scope").item(0).getTextContent();
+					Metric metric = new Metric(shortName,
+							eElement.getElementsByTagName("Name").item(0).getTextContent(),
+							eElement.getElementsByTagName("Description").item(0).getTextContent(),
+							eElement.getElementsByTagName("Type").item(0).getTextContent(),
+							scope,
+							-1.0);
+					//Add 'c' or 'm' to the shortname of the metric to distinguish between class scope metrics and model scope metrics
+					metricData.put((scope.equals("Model")?"m":"c") + shortName, metric);
+				}
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		
+	}
+
 	private void setTableColumnWidths(int[] columnWidths) {
 	    TableColumnModel columnModel = tblMetricList.getColumnModel();
 	    for (int i = 0; i < columnModel.getColumnCount(); i++) {       
@@ -156,8 +212,33 @@ public class MetricMeasurement extends JDialog {
 	 * @return 
 	 */
 	private List<Metric> loadClassMetrics(MClass cls) {
-		// TODO Auto-generated method stub
-		return null;
+		List<Metric> metrics = new ArrayList<Metric>();
+		//get the meta class containing class scope metric definitions
+		MClass mettricCls = metaSystem.model().getClass("ClassMetrics");
+		for(MOperation op: mettricCls.operations())
+		{
+			double value=-1.0;
+			//the OCL expression to retrieve a class metric value
+			String metricRetrievalExpr = cls.name()+ "Class.metrics." + op.name() + "()";
+			Expression expr = Util.compileMetaOCLExpr(metaSystem, metricRetrievalExpr);
+			//evaluate the expression on the metamode level to get the metric value
+			if(expr != null)
+			{
+				evaluator = new Evaluator(true);
+	            Value val = evaluator.eval(expr, metaSystem.state(),metaSystem.varBindings());
+	            if(val.isInteger() || val.isReal())
+	            	value = Double.parseDouble(val.toString());
+			}	
+			//get the additional info of the metric. 
+			//Add 'c' to the shortname of the metric to distinguish between class scope metrics and model scope metrics
+			Metric metric = metricData.get("c"+op.name());
+			if(metric == null)
+				metric = new Metric(op.name(),"","","","Class",value);
+			else metric.setValue(value);
+			//add the metric to the result
+			metrics.add(metric);
+		}
+		return metrics;
 	}
 	
 	/**
@@ -166,19 +247,30 @@ public class MetricMeasurement extends JDialog {
 	 */
 	private List<Metric> loadModelMetrics() {
 		List<Metric> metrics = new ArrayList<Metric>();
-		MClass cls = metaSystem.model().getClass("ModelMetrics");
-		for(MOperation op: cls.operations())
+		Metric metric;
+		//get the meta class containing model scope metric definitions
+		MClass mettricCls = metaSystem.model().getClass("ModelMetrics");
+		for(MOperation op: mettricCls.operations())
 		{
 			double value=-1.0;
-			Expression expr = Util.compileMetaOCLExpr(metaSystem, "ModelMetrics." + op.name() + "()");
+			//the OCL expression to retrieve a class metric value
+			String metricRetrievalExpr = "ModelMetrics." + op.name() + "()";
+			Expression expr = Util.compileMetaOCLExpr(metaSystem, metricRetrievalExpr);
+			//evaluate the expression on the metamode level to get the metric value
 			if(expr != null)
 			{
 				evaluator = new Evaluator(true);
 	            Value val = evaluator.eval(expr, metaSystem.state(),metaSystem.varBindings());
 	            if(val.isInteger() || val.isReal())
 	            	value = Double.parseDouble(val.toString());
-			}	
-			Metric metric = new Metric(op.name(),"","","Model","",value);
+			}
+			//get the additional info of the metric
+			//Add 'm' to the shortname of the metric to distinguish between class scope metrics and model scope metrics
+			metric = metricData.get("m"+op.name());
+			if(metric == null)
+				metric = new Metric(op.name(),"","","","Model",value);
+			else metric.setValue(value);
+			//add the metric to the result 
 			metrics.add(metric);
 		}
 		return metrics;
@@ -235,8 +327,10 @@ class MetricMeasurementTableModel extends AbstractTableModel {
         case 2:
         	return list.get(rowIndex).getType();
         case 3:
-        	
-        	return String.format("%.2f", list.get(rowIndex).getValue());
+        	if(list.get(rowIndex).getValue() == -1.0)//undefined
+        		return "<html><i>Undefined</i></html>";
+    		else
+        			return String.format("%.2f", list.get(rowIndex).getValue());
         default:
             return null;
         }

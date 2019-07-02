@@ -2849,32 +2849,31 @@ end
 -- End Figure x.xx
 --------------------------------------------------------------------------------------------------------
 
+
 ------------------------------------------------------------------------
---ClassMetrics: class for metrics calculation in the context of a class
+--AuxiliaryOperation: class for auxiliary operations using in metric definition
 ------------------------------------------------------------------------
-class ClassMetrics
+class MetricBase
 operations
-	-------------------0. Auxiliary operations-----------------
-	-----------------------------------------------------------
-	--get local defined operations
+--get local defined operations
 	localOperations(): Set(Operation) = 
-		self.class.ownedOperation
+		self.oclAsType(ClassMetrics).class.ownedOperation
 	
 	--get local defined attributes
 	localAttributes(): OrderedSet(Property) = 
-		self.class.ownedAttribute
+		self.oclAsType(ClassMetrics).class.ownedAttribute
 	
 	--get a set of associations that the class is a part of
 	allAssociations(): Set(Association) = 
-		self.class.association
+		self.oclAsType(ClassMetrics).class.association
 	
 	--get all inherited attributes
 	inheritedAttributes(): Set(NamedElement) =
-		self.class.inheritedMember->select(m|m.oclIsTypeOf(Property))
+		self.oclAsType(ClassMetrics).class.inheritedMember->select(m|m.oclIsTypeOf(Property))
 	
 	--get all inherited operations
 	inheritedOperations(): Set(NamedElement) =
-		self.class.inheritedMember->select(m|m.oclIsTypeOf(Operation))
+		self.oclAsType(ClassMetrics).class.inheritedMember->select(m|m.oclIsTypeOf(Operation))
 	
 	--get attributes that have another class as their type (excluding inheritance)
 	userdefinedTypeAttributes(): OrderedSet(Property) = 
@@ -2907,19 +2906,19 @@ operations
 	
 	--get all ancestors of the corresponding class
 	allAncestors() : Set(Class) = 
-		self.class.superClass->closure(superClass)
+		self.oclAsType(ClassMetrics).class.superClass->closure(superClass)
 		
 	--get all descendants of the corresponding class
 	allDescendants() : Set(Class) = 
-		self.class.subClass->closure(subClass)
+		self.oclAsType(ClassMetrics).class.subClass->closure(subClass)
 	
 	--get immediate descendants of the corresponding class	
 	children() : Set(Class) = 
-		self.class.subClass
+		self.oclAsType(ClassMetrics).class.subClass
 	
 	--get immediate ancestors of the corresponding class	
 	parents() : Set(Class) = 
-		self.class.superClass
+		self.oclAsType(ClassMetrics).class.superClass
 	
 	--get the maximum length of all inheritance trees from class c to the root classes
 	getMaxInheritancetree(c: Class): Integer = 
@@ -2941,7 +2940,13 @@ operations
 			c.metrics.parents()->collect(pc|pc.metrics.getNumberofHierarchies(pc))->sum()
 		endif
 	
-	
+end
+
+------------------------------------------------------------------------
+--ClassMetrics: class for metrics calculation in the context of a class
+------------------------------------------------------------------------
+class ClassMetrics < MetricBase
+operations
 	---------------------1. Size metrics----------------------
 	-----------------------------------------------------------
 	--1.1. Number of Attributes
@@ -2976,12 +2981,12 @@ operations
 	SIX(): Real = 
 		(NMO()*DIT())/(NOM()+NMI())
 	
-	--2.4. Number of all ancestors (ACT)
-	ACT(): Integer = 
+	--2.4. Number of all ancestors (NOAC)
+	NOAC(): Integer = 
 		allAncestors()->size()
 	
-	--2.5. Number of all descendants (DCD)
-	DCD(): Integer = 
+	--2.5. Number of all descendants (NODC)
+	NODC(): Integer = 
 		allDescendants()->size()
 	
 	--2.6. Number of hierarchies
@@ -3022,16 +3027,16 @@ operations
 	NAS(): Integer =
 		allAssociations()->size() + allAncestors().collect(association)->size()
 		
-	--4.4. Coupling Between Object (CBO) or efferent coupling (Ce). !!This metric can only be approximately measured
+	--4.4. Coupling Between Object (CBO) or efferent coupling (Ce). !!	
 	CBO(): Integer =
 		Class.allInstances()->excluding(self.class)->select(c|isCoupledbyAttribute(c) 
 		or isCoupledbyParameter(c) or isCoupledbyReturnType(c) or isCoupledbyAssociation(c))->size()
 	
 	--4.5. Afferent coupling (Ca). !!This metric can only be approximately measured
-	Ca(): Integer =
+	/*Ca(): Integer =
 		Class.allInstances()->excluding(self.class)->select(c|c.metrics.isCoupledbyAttribute(self.class) 
 		or c.metrics.isCoupledbyParameter(self.class) or c.metrics.isCoupledbyReturnType(self.class) or c.metrics.isCoupledbyAssociation(self.class))->size()
-	
+	*/
 	--4.6. Direct Class Coupling (DCC)
 	DCC(): Integer =
 		Class.allInstances()->excluding(self.class)->select(c|isCoupledbyAttribute(c) 
@@ -3083,7 +3088,7 @@ operations
 	--3.3. Polymorphism Factor (PF)
 	PF(): Real =
 		(Class.allInstances()->collect(c|c.metrics.NMO())->sum())/
-		(Class.allInstances()->collect(c|(c.metrics.NOM() - c.metrics.NMO()) * c.metrics.DCD())->sum())
+		(Class.allInstances()->collect(c|(c.metrics.NOM() - c.metrics.NMO()) * c.metrics.NODC())->sum())
 	--3.4. Abstractness (A)
 	A(): Real =
 		(Class.allInstances()->select(c|c.isAbstract = true)->size())/DSC()
