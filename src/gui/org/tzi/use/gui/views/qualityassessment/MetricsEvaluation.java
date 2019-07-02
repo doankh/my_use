@@ -32,6 +32,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -80,7 +82,6 @@ public class MetricsEvaluation extends JPanel implements View{
 		metaSystem = fSession.metaSystem();
 		setLayout(new BorderLayout());
 		
-		
 		btnLoadConfigFile = new JButton("Load the Setting");
 		btnLoadConfigFile.addActionListener(new ActionListener() {
 			@Override
@@ -109,39 +110,56 @@ public class MetricsEvaluation extends JPanel implements View{
 					BufferedReader bufReader = new BufferedReader(reader);
 					
 					List<MMetricEvaluationSetting> configList = new ArrayList<MMetricEvaluationSetting>();
+					int settingNo=0;
+					
+					//check error while reading the configuration file. print the info to the log window
+					boolean checkError = true;
+					parent.logWriter().flush();
+					parent.logWriter().println("---------------------------------------");
+					parent.logWriter().println("Read the metric threshold configuration: " + confFile.getName());
 					while((readLine = bufReader.readLine()) != null)
 					{
 						String[] data = readLine.split("\\s+");
-						MMetricEvaluationSetting config = new MMetricEvaluationSetting();
-						config.setScope(data[0].trim().equals("0")?"Class":"Model");
-						config.setName(data[1]);
-						try{
-							config.setMinValue(Double.parseDouble(data[2]));
-							config.setMaxValue(Double.parseDouble(data[3]));
-						}
-						catch(NumberFormatException ex)
+						//Check the validity of the setting
+						settingNo++;
+						if(checkMetricSetting(settingNo, data, parent.logWriter()))
 						{
+							MMetricEvaluationSetting config = new MMetricEvaluationSetting();
+							config.setScope(data[0].trim().equals("0")?"Class":"Model");
+							config.setName(data[1]);
+							try{
+								config.setMinValue(Double.parseDouble(data[2]));
+								config.setMaxValue(Double.parseDouble(data[3]));
+							}
+							catch(NumberFormatException ex)
+							{
+								
+							}
+							evaluationInv = config.createEvaluationInvariant();
 							
+							Expression expr = Util.compileMetaOCLExpr(metaSystem, evaluationInv);
+							
+					        try {
+					            // evaluate it with current system state
+					            evaluator = new Evaluator(true);
+					            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
+					            // print result
+					            config.setSatisfaction(Boolean.parseBoolean(val.toString()));
+					        } catch (MultiplicityViolationException e) {
+					            
+					        }
+					        configList.add(config);
 						}
-						evaluationInv = config.createEvaluationInvariant();
-						
-						Expression expr = Util.compileMetaOCLExpr(metaSystem, evaluationInv);
-						
-				        try {
-				            // evaluate it with current system state
-				            evaluator = new Evaluator(true);
-				            Value val = evaluator.eval(expr, metaSystem.state(), metaSystem.varBindings());
-				            // print result
-				            config.setSatisfaction(Boolean.parseBoolean(val.toString()));
-				        } catch (MultiplicityViolationException e) {
-				            
-				        }
-				        configList.add(config);
+						else
+							checkError = false;
 					}
-					
 					tableModel.setList(configList);
 					lblInfo.setText("<html>Model evaluation result: " + tableModel.getNumofFailures() + " setting failed. </html>");
-					
+					if(!checkError)
+						JOptionPane.showMessageDialog(null,"Errors while loading the configuration file. See the log window for details!");
+					else
+						parent.logWriter().println("no errors!");
+										
 				}catch(IOException ex){}
 			}
 		});
@@ -189,7 +207,36 @@ public class MetricsEvaluation extends JPanel implements View{
 		add(bottomPanel, BorderLayout.SOUTH);
 
 	}
-	
+	//check the error while reading a metric threshold setting
+	boolean checkMetricSetting(int settingNo, String[] setting, PrintWriter fLogWriter)
+	{
+		boolean result = true;
+		String prefix = "Setting " + settingNo + ": ";
+		if(setting.length != 4)
+		{
+			result = false;
+			fLogWriter.println(prefix + "Must include 4 parameters: Metric scope(0/1), Name of the Metric, Lower threshold, Upper threshold. Parameters are separated by a space");
+		}
+		else
+		{
+			if(!setting[0].trim().equals("0") && !setting[0].trim().equals("1"))
+			{
+				result = false;
+				fLogWriter.println(prefix + "Metric scope parameter must be 0 or 1");
+			}
+			if(!Util.isNumeric(setting[2]))
+			{
+				result = false;
+				fLogWriter.println(prefix + "The lower threshold must be a number");
+			}
+			if(!Util.isNumeric(setting[3]))
+			{
+				result = false;
+				fLogWriter.println(prefix + "The upper threshold must be a number");
+			}
+		}
+		return result;
+	}
 	@Override
 	public void detachModel() {
 		// TODO Auto-generated method stub

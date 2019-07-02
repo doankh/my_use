@@ -57,4 +57,13 @@ public class Util {
 			return null;
 		}
 	}
+	//check whether a string is a numberic 
+	public static boolean isNumeric(String str) { 
+		  try {  
+		    Double.parseDouble(str);  
+		    return true;
+		  } catch(NumberFormatException e){  
+		    return false;  
+		  }  
+		}
 }
