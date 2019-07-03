@@ -1,0 +1,198 @@
+﻿<?xml version="1.0"?>
+<Root>
+  <Metric>
+      <ShortName>DSC</ShortName>
+      <Name>Total number of classes</Name>
+      <Description>Total number of classes in the design</Description>
+      <Type>Size</Type>
+      <Scope>Model</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NAssoc</ShortName>
+      <Name>Number of total associations</Name>
+      <Description>Number of total associations: the total number of
+associations within a class diagram</Description>
+      <Type>Size</Type>
+      <Scope>Model</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NOA</ShortName>
+      <Name>Number of attributes</Name>
+      <Description>Number of attributes of a class</Description>
+      <Type>Size</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NOM</ShortName>
+      <Name>Number of local methods </Name>
+      <Description>Number of local methods of a class. The inheritance  methods are not taken into account</Description>
+      <Type>Size</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>SIZE2</ShortName>
+      <Name>The size of a class</Name>
+      <Description>SIZE2 = NOA + NOM</Description>
+      <Type>Size</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>APPM</ShortName>
+      <Name>Average Parameters per Method</Name>
+      <Description>Average Parameters per Method = TotalOfMethodsParameters/TotalNumberOfMethods</Description>
+      <Type>Size</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NOC</ShortName>
+      <Name>Number of direct children</Name>
+      <Description>Number of direct children class inherited from the class</Description>
+      <Type>Complexity</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NOH</ShortName>
+      <Name>Number of hierarchies</Name>
+      <Description>Number of hierarchy trees in the model</Description>
+      <Type>Complexity</Type>
+      <Scope>Model</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>DIT</ShortName>
+      <Name>Depth of inheritance</Name>
+      <Description>The DIT value for a class within a generalization hierarchy is the length of the longest path from the class to the root of the hierarchy</Description>
+      <Type>Complexity</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>MaxDIT</ShortName>
+      <Name>Depth of inheritance</Name>
+      <Description>The maximum between the
+DIT value obtained for each class of the class diagram</Description>
+      <Type>Complexity</Type>
+      <Scope>Model</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>SIX</ShortName>
+      <Name>Specialization index</Name>
+      <Description>Specialization index</Description>
+      <Type>Complexity</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NMI</ShortName>
+      <Name>Number of methods inherited</Name>
+      <Description>The Number of Methods Inherited metric is the total number of method inherited by a subclass. </Description>
+      <Type>OO design</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NMO</ShortName>
+      <Name>Number of methods overridden</Name>
+      <Description>The metric counts the total number of methods overridden by a subclass.</Description>
+      <Type>OO design</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>AIF</ShortName>
+      <Name>Attribute inheritance factor</Name>
+      <Description>The Attribute Inheritance Factor is defined as a quotient between the sum of inherited attributes in all classes of the system under consideration and the total number of available attributes (locally defined plus inherited) for all classes.</Description>
+      <Type>OO design</Type>
+      <Scope>Model</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>MIF</ShortName>
+      <Name>Method inheritance factor</Name>
+      <Description>The Method Inheritance Factor is defined as a quotient between the sum of inherited methods in all classes of the system under consideration and the total number of available methods (locally defined and include those inherited) for all classes.
+       </Description>
+      <Type>OO design</Type>
+      <Scope>Model</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>PF</ShortName>
+      <Name>Polymorphism factor</Name>
+      <Description>The Polymorphism Factor is defined as the quotient between the actual number of different possible polymorphic situations, and the maximum number of possible distinct polymorphic situations for class Ci
+       </Description>
+      <Type>OO design</Type>
+      <Scope>Model</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>A</ShortName>
+      <Name>Abstractness</Name>
+      <Description>Ratio of number of abstract classes and Interfaces in a Package and total number of classes.
+       </Description>
+      <Type>OO design</Type>
+      <Scope>Model</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>CBO</ShortName>
+      <Name>Coupling between object</Name>
+      <Description>The Coupling Between Object classes metric represents the number of classes coupled to a given class. This metric can only be approximately measured by caculating number of classes coupled to the class through association, class attribute, operation paramater, operation return type. This metric can be considered as efferent coupling (Ce) metric.
+       </Description>
+      <Type>Coupling</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric> 	
+      <ShortName>DAC</ShortName>
+      <Name>Number of attributes that have another class as their type</Name>
+      <Description>Number of attributes that have another class as their type.
+       </Description>
+      <Type>Coupling</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>DAC1</ShortName>
+      <Name>Number of different classes that are used as types of attributes.</Name>
+      <Description>The number of different classes that are used as types of attributes in a class.
+       </Description>
+      <Type>Coupling</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NAS</ShortName>
+      <Name>Number of associations</Name>
+      <Description>The number of associations that the class involves.
+       </Description>
+      <Type>Coupling</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>DCC</ShortName>
+      <Name>Direct class coupling</Name>
+      <Description>The Direct Class Coupling metric is a count of the different number of classes that a class is directly related to. The metric includes classes that are directly related by attribute declarations and message passing (parameters) in methods
+       </Description>
+      <Type>Coupling</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NOAC</ShortName>
+      <Name>Number of all ancestors</Name>
+      <Description>The number of all ancestors of the class. It measures number of classes that this class inherits from.
+       </Description>
+      <Type>Complexity</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NODC</ShortName>
+      <Name>Number of all descendants</Name>
+      <Description>The number of all descendants of the class. It measures number of classes inherited from this class.
+       </Description>
+      <Type>Complexity</Type>
+      <Scope>Class</Scope>
+  </Metric>
+    <Metric>
+      <ShortName>NOH</ShortName>
+      <Name>Number of hierarchies</Name>
+      <Description>The number of hierarchies (inheritance trees) from this class to the root classes</Description>
+      <Type>Complexity</Type>
+      <Scope>Class</Scope>
+  </Metric>
+  <Metric>
+      <ShortName>NAI</ShortName>
+      <Name>Number of non-redefined inherited attributes</Name>
+      <Description>It is the number of attributes the this class inherits from all ancestor classes (not include the redefined ones).
+       </Description>
+      <Type>OO Design</Type>
+      <Scope>Class</Scope>
+  </Metric>
+</Root>
