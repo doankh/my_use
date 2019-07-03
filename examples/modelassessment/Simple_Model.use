@@ -1,0 +1,5 @@
+model Simple
+class Person
+attributes
+	name: String
+end

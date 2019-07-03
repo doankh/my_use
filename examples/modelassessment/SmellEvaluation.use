@@ -1,0 +1,50 @@
+
+
+model Employee
+
+-- classes
+
+class Person
+attributes
+  name : String
+  age : Integer
+operations
+  raiseSalary(rate : Real) : Real
+end
+
+class Company
+attributes
+  name : String
+  location : String
+operations
+  hire(p : Person)
+  fire(p : Person)
+end
+
+class Employee < Person
+attributes
+  department: String
+end
+
+class manager < Person
+attributes
+  position: String	
+end
+
+class FulltimeEmp < Employee, Person
+attributes
+  salary : Real
+  taxRate: Integer	
+end
+
+class ParttimeEmp < Employee
+attributes
+  salary : Real
+  mainJob: String	
+end
+-- associations
+
+association WorksFor between
+  Person[*] role employee
+  Company[0..1] role employer
+end

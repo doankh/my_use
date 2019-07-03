@@ -1,0 +1,69 @@
+
+model Company
+-------------
+-- 1.classes
+-------------
+-- 1.1. class Employee
+class Employee
+attributes
+  name : String
+  tel: String
+  age: Integer
+  salary: Integer
+operations
+  raiseSalary(newSal: Real)	
+end
+
+class DepHeader < Employee
+end
+
+class ProjManager < Employee
+end
+
+--
+
+class Organization
+attributes
+	name : String
+	address: String
+	tel: String
+operations
+	hireEmp()
+	fireEmp()
+	numberofEmps(): Integer
+end
+
+-- 1.2. class Department
+class Department < Organization
+attributes
+  leader : DepHeader
+operations
+  hireEmp()
+end
+
+-- 1.3. class Project
+class Project < Organization
+attributes
+  manager: ProjManager
+  controlBy: Department
+  budget : Integer
+operations
+  hireEmp()
+  increaseBudget(money: Integer)
+end
+
+-----------------
+-- 2.associations
+-----------------
+association WorksIn between
+  Employee[*] role employee
+  Organization[*] role employer   
+end
+
+--association Controls between
+--  Department[1] role operator
+--  Project[*] role project
+--end
+--------------------
+-- 3.OCL constraints
+--------------------
