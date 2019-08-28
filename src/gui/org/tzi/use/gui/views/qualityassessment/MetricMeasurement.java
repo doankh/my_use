@@ -31,7 +31,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,21 +45,13 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.main.Session;
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.mm.MOperation;
 import org.tzi.use.uml.ocl.expr.Evaluator;
-import org.tzi.use.uml.ocl.expr.Expression;
-import org.tzi.use.uml.ocl.value.Value;
 import org.tzi.use.uml.sys.MSystem;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /**
  * TODO
@@ -78,7 +69,8 @@ public class MetricMeasurement extends JDialog {
 	private JTable tblMetricList;
 	private JButton btnView;
 	private final JComboBox fComboClassList;
-	private Map<String, Metric> metricData;
+	private Map<String, Metric> preDefinedMetricData;
+	private Map<String, Metric> userDefinedMetricData;
 	private MetricMeasurementTableModel tableModel = new MetricMeasurementTableModel();
 	
 	@SuppressWarnings("unchecked")
@@ -87,7 +79,14 @@ public class MetricMeasurement extends JDialog {
 		metaSystem = fSession.metaSystem();
 		system = fSession.system();
 		
-		initMetricData();
+		Path homeDir = Paths.get(System.getProperty("user.dir")); 
+		File xmlFile;
+		xmlFile = homeDir.resolve("metamodels").resolve("PreDefinedMetrics.xml").toFile();
+		preDefinedMetricData= Util.loadMetricDatafromXMLFile(xmlFile);
+		
+		xmlFile = homeDir.resolve("metamodels").resolve("UserDefinedMetrics.xml").toFile();
+		userDefinedMetricData= Util.loadMetricDatafromXMLFile(xmlFile);
+		
 		
 		setLayout(new BorderLayout());
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -163,43 +162,7 @@ public class MetricMeasurement extends JDialog {
         setLocationRelativeTo(parent);
 	}
 	
-	/**
-	 * Read data of the defined metrics from a XML file
-	 */
-	private void initMetricData() {
-		metricData = new HashMap<String,Metric>();
-		try {
-			Path homeDir = Paths.get(System.getProperty("user.dir")); 
-			File xmlFile = homeDir.resolve("metamodels").resolve("Metrics.xml").toFile();
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			Document doc = dBuilder.parse(xmlFile);
-			NodeList nList = doc.getElementsByTagName("Metric");
-			for(int i=0; i<nList.getLength(); i++)
-			{				
-				Node nNode = nList.item(i);
-				if(nNode.getNodeType() == Node.ELEMENT_NODE)
-				{
-					Element eElement = (Element) nNode;
-					String shortName = eElement.getElementsByTagName("ShortName").item(0).getTextContent();
-					String scope = eElement.getElementsByTagName("Scope").item(0).getTextContent();
-					Metric metric = new Metric(shortName,
-							eElement.getElementsByTagName("Name").item(0).getTextContent(),
-							eElement.getElementsByTagName("Description").item(0).getTextContent(),
-							eElement.getElementsByTagName("Type").item(0).getTextContent(),
-							scope,
-							-1.0);
-					//Add 'c' or 'm' to the shortname of the metric to distinguish between class scope metrics and model scope metrics
-					metricData.put((scope.equals("Model")?"m":"c") + shortName, metric);
-				}
-			}
-		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
-		}
-		
-	}
-
+	
 	private void setTableColumnWidths(int[] columnWidths) {
 	    TableColumnModel columnModel = tblMetricList.getColumnModel();
 	    for (int i = 0; i < columnModel.getColumnCount(); i++) {       
@@ -213,30 +176,32 @@ public class MetricMeasurement extends JDialog {
 	 */
 	private List<Metric> loadClassMetrics(MClass cls) {
 		List<Metric> metrics = new ArrayList<Metric>();
-		//get the meta class containing class scope metric definitions
-		MClass mettricCls = metaSystem.model().getClass("ClassMetrics");
-		for(MOperation op: mettricCls.operations())
+		Metric metric;
+		//get the meta class containing class scope pre-defined metric definitions
+		MClass metricCls = metaSystem.model().getClass("ClassMetrics");
+		if(metricCls != null)
 		{
-			double value=-1.0;
-			//the OCL expression to retrieve a class metric value
-			String metricRetrievalExpr = cls.name()+ "Class.metrics." + op.name() + "()";
-			Expression expr = Util.compileMetaOCLExpr(metaSystem, metricRetrievalExpr);
-			//evaluate the expression on the metamode level to get the metric value
-			if(expr != null)
+			for(MOperation op: metricCls.operations())
 			{
-				evaluator = new Evaluator(true);
-	            Value val = evaluator.eval(expr, metaSystem.state(),metaSystem.varBindings());
-	            if(val.isInteger() || val.isReal())
-	            	value = Double.parseDouble(val.toString());
-			}	
-			//get the additional info of the metric. 
-			//Add 'c' to the shortname of the metric to distinguish between class scope metrics and model scope metrics
-			Metric metric = metricData.get("c"+op.name());
-			if(metric == null)
-				metric = new Metric(op.name(),"","","","Class",value);
-			else metric.setValue(value);
-			//add the metric to the result
-			metrics.add(metric);
+				metric = preDefinedMetricData.get("c"+op.name());
+				if(metric == null)
+					metric = new Metric(op.name(),"","","","Class","",-1);
+				else
+				{
+					metric.setShortName(op.name());
+					metric.setScope("Class");
+				}
+				metric.setValue(metric.evaluate(metaSystem, cls));
+				//add the metric to the result 
+				metrics.add(metric);
+			}
+		}
+		//get the meta class containing class scope pre-defined metric definitions
+		for (Map.Entry<String, Metric> entry : userDefinedMetricData.entrySet())		
+		{
+			metric = entry.getValue();
+			if(metric.getScope().equals("Class"))
+				metric.setValue(metric.evaluate(metaSystem, cls));
 		}
 		return metrics;
 	}
@@ -249,30 +214,25 @@ public class MetricMeasurement extends JDialog {
 		List<Metric> metrics = new ArrayList<Metric>();
 		Metric metric;
 		//get the meta class containing model scope metric definitions
-		MClass mettricCls = metaSystem.model().getClass("ModelMetrics");
-		for(MOperation op: mettricCls.operations())
+		MClass metricCls = metaSystem.model().getClass("ModelMetrics");
+		if(metricCls != null)
 		{
-			double value=-1.0;
-			//the OCL expression to retrieve a class metric value
-			String metricRetrievalExpr = "ModelMetrics." + op.name() + "()";
-			Expression expr = Util.compileMetaOCLExpr(metaSystem, metricRetrievalExpr);
-			//evaluate the expression on the metamode level to get the metric value
-			if(expr != null)
+			for(MOperation op: metricCls.operations())
 			{
-				evaluator = new Evaluator(true);
-	            Value val = evaluator.eval(expr, metaSystem.state(),metaSystem.varBindings());
-	            if(val.isInteger() || val.isReal())
-	            	value = Double.parseDouble(val.toString());
+				metric = preDefinedMetricData.get("m"+op.name());
+				if(metric == null)
+					metric = new Metric(op.name(),"","","","Model","",-1);
+				else
+				{
+					metric.setShortName(op.name());
+					metric.setScope("Model");
+				}
+				metric.setValue(metric.evaluate(metaSystem, null));
+				//add the metric to the result 
+				metrics.add(metric);
 			}
-			//get the additional info of the metric
-			//Add 'm' to the shortname of the metric to distinguish between class scope metrics and model scope metrics
-			metric = metricData.get("m"+op.name());
-			if(metric == null)
-				metric = new Metric(op.name(),"","","","Model",value);
-			else metric.setValue(value);
-			//add the metric to the result 
-			metrics.add(metric);
 		}
+		
 		return metrics;
 	}
 
@@ -335,106 +295,4 @@ class MetricMeasurementTableModel extends AbstractTableModel {
             return null;
         }
     }
-}
-/*
- * data class for Metric
- */
-class Metric{
-	/**
-	 * @param shortName
-	 * @param name
-	 * @param description
-	 * @param type
-	 * @param scope
-	 * @param value
-	 */
-	public Metric(String shortName, String name, String description, String type, String scope, double value) {
-		super();
-		this.shortName = shortName;
-		this.name = name;
-		this.description = description;
-		this.type = type;
-		this.scope = scope;
-		this.value = value;
-	}
-	private String shortName;
-	private String name;
-	private String description;
-	private String type;
-	private String scope;
-	private double value;
-	
-	/**
-	 * @return the shortName
-	 */
-	public String getShortName() {
-		return shortName;
-	}
-	/**
-	 * @param shortName the shortName to set
-	 */
-	public void setShortName(String shortName) {
-		this.shortName = shortName;
-	}
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
-	/**
-	 * @param name the name to set
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
-	/**
-	 * @return the description
-	 */
-	public String getDescription() {
-		return description;
-	}
-	/**
-	 * @param description the description to set
-	 */
-	public void setDescription(String description) {
-		this.description = description;
-	}
-	/**
-	 * @return the type
-	 */
-	public String getType() {
-		return type;
-	}
-	/**
-	 * @param type the type to set
-	 */
-	public void setType(String type) {
-		this.type = type;
-	}
-	/**
-	 * @return the scope
-	 */
-	public String getScope() {
-		return scope;
-	}
-	/**
-	 * @param scope the scope to set
-	 */
-	public void setScope(String scope) {
-		this.scope = scope;
-	}
-	/**
-	 * @return the value
-	 */
-	public double getValue() {
-		return value;
-	}
-	/**
-	 * @param value the value to set
-	 */
-	public void setValue(double value) {
-		this.value = value;
-	}
-	
 }

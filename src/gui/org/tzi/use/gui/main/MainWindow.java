@@ -50,6 +50,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -114,9 +115,12 @@ import org.tzi.use.gui.views.diagrams.classdiagram.MClassDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewMetaObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.objectdiagram.NewObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.statemachine.StateMachineDiagramView;
+import org.tzi.use.gui.views.qualityassessment.AddNewMetric;
+import org.tzi.use.gui.views.qualityassessment.Metric;
 import org.tzi.use.gui.views.qualityassessment.MetricMeasurement;
 import org.tzi.use.gui.views.qualityassessment.MetricsEvaluation;
 import org.tzi.use.gui.views.qualityassessment.QualityPropertiesEval;
+import org.tzi.use.gui.views.qualityassessment.Util;
 import org.tzi.use.main.ChangeEvent;
 import org.tzi.use.main.ChangeListener;
 import org.tzi.use.main.Session;
@@ -126,11 +130,16 @@ import org.tzi.use.main.shell.Shell;
 import org.tzi.use.parser.use.USECompiler;
 import org.tzi.use.runtime.gui.impl.PluginActionProxy;
 import org.tzi.use.uml.mm.MClass;
+import org.tzi.use.uml.mm.MInvalidModelException;
 import org.tzi.use.uml.mm.MMInstanceGenerator;
 import org.tzi.use.uml.mm.MModel;
+import org.tzi.use.uml.mm.MOperation;
 import org.tzi.use.uml.mm.ModelFactory;
 import org.tzi.use.uml.mm.statemachines.MProtocolStateMachine;
 import org.tzi.use.uml.mm.statemachines.MStateMachine;
+import org.tzi.use.uml.ocl.expr.Expression;
+import org.tzi.use.uml.ocl.expr.VarDeclList;
+import org.tzi.use.uml.ocl.type.TypeFactory;
 import org.tzi.use.uml.sys.MObject;
 import org.tzi.use.uml.sys.MSystem;
 import org.tzi.use.uml.sys.MSystemException;
@@ -477,8 +486,13 @@ public class MainWindow extends JFrame {
         mi = menu.add(fActionGenerateMetamodelObjectDiagram);
         
         menu.addSeparator();
-        mi = menu.add(fActionMetricsMeasurment);
-        mi = menu.add(fActionMetricsEvaluation);     
+        submenu = new JMenu("Metric measurment");
+        menu.add(submenu);
+        
+        mi = submenu.add(fActionAddNewMetric);
+        mi = submenu.add(fActionMetricsMeasurment);
+        mi = submenu.add(fActionMetricsEvaluation);
+        
         mi = menu.add(fActionPopertiesEvaluation);
         
         // create the browser panel
@@ -1084,6 +1098,8 @@ public class MainWindow extends JFrame {
     //metamodel object diagram
     private final ActionViewCreateObjectDiagram fActionGenerateMetamodelObjectDiagram = new ActionViewCreateObjectDiagram(true);
     
+    private final ActionAddNewMetric fActionAddNewMetric = new ActionAddNewMetric();
+    
     private final ActionMetricsMeasurement fActionMetricsMeasurment = new ActionMetricsMeasurement();
     
     private final ActionMetricsEvaluation fActionMetricsEvaluation = new ActionMetricsEvaluation();
@@ -1205,9 +1221,10 @@ public class MainWindow extends JFrame {
             	if(mmodel!=null){
 	            	metaSystem = new MSystem(mmodel);
 	            	//auto generate meta-instance and add it into metaSystem
-	            	
 	            	generateMetaInstances(system, metaSystem);
 	            	getJMenuBar().getMenu(4).setEnabled(true);
+	            	//load the additional user-defined metrics to the metasystem
+	            	loadUserdefinedMetricstoMetasystem(metaSystem);
             	}
             	else{
             		metaSystem = null;
@@ -1274,6 +1291,39 @@ public class MainWindow extends JFrame {
     			metaSystem.execute(genSoilCommands.get(i));
 			}
         }
+    	
+    	private void loadUserdefinedMetricstoMetasystem(MSystem metaSystem)
+    	{
+    		//load a set metric definitions from external XML file
+    		MClass metricClass;
+    		
+    		Path homeDir = Paths.get(System.getProperty("user.dir")); 
+    		File xmlFile;
+    		xmlFile = homeDir.resolve("metamodels").resolve("UserDefinedMetrics.xml").toFile();
+    		Map<String, Metric> userDefinedMetrics = Util.loadMetricDatafromXMLFile(xmlFile);
+    		//add each to ClassMetric or ModelMetric meta class
+    		for (Map.Entry<String, Metric> entry : userDefinedMetrics.entrySet())		
+    		{
+    			Metric metric = entry.getValue();
+				metricClass = metric.getScope().equals("Class")?
+						metaSystem.model().getClass("ClassMetrics")
+						:metaSystem.model().getClass("ModelMetrics");   				
+    			
+				if(metricClass != null)
+				{
+					MOperation op = new MOperation(metric.getShortName(),new VarDeclList(true), TypeFactory.mkReal());
+    				Expression expr = Util.compileMetaOCLExpr(metaSystem, metric.getOcldefinition());
+    				try {
+						op.setExpression(expr);
+						metricClass.addOperation(op);
+					} catch (MInvalidModelException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+    			
+    		}
+    	}
     	/*
          * Translate a soilcommand to a statement which can be executed from code
          */
@@ -1716,6 +1766,22 @@ public class MainWindow extends JFrame {
             dlg.setVisible(true);
         }
     }
+    
+    /*
+     * Opens a new window for metrics measurement
+     */
+    private class ActionAddNewMetric extends AbstractAction {
+    	ActionAddNewMetric() {
+            super("Add new metric", getIcon("metric_measurement.png"));
+        }
+
+        @Override
+		public void actionPerformed(ActionEvent e) {
+        	AddNewMetric addMetricDlg = new AddNewMetric(MainWindow.this, fSession);
+        	addMetricDlg.setVisible(true);
+        }
+    }
+    
     /*
      * Opens a new window for metrics measurement
      */

@@ -212,6 +212,7 @@ public class MetricsEvaluation extends JPanel implements View{
 		add(bottomPanel, BorderLayout.SOUTH);
 
 	}
+	
 	//check the error while reading a metric threshold setting
 	boolean checkMetricSetting(int settingNo, String[] setting, PrintWriter fLogWriter)
 	{
