@@ -21,11 +21,24 @@
 
 package org.tzi.use.gui.views.qualityassessment;
 
+import java.io.File;
+import java.nio.file.Path;
+
+import javax.swing.JOptionPane;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.ocl.value.Value;
 import org.tzi.use.uml.sys.MSystem;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 /**
  * TODO
@@ -44,7 +57,7 @@ public class Metric{
 	 * @param scope
 	 * @param value
 	 */
-	public Metric(String shortName, String name, String description, String type, String scope, String oclDefinition, double value) {
+	public Metric(String shortName, String name, String description, String type, String scope, String oclDefinition) {
 		super();
 		this.shortName = shortName;
 		this.name = name;
@@ -52,7 +65,7 @@ public class Metric{
 		this.type = type;
 		this.scope = scope;
 		this.oclDefinition = oclDefinition;
-		this.value = value;
+		this.value = -1;
 	}
 	private String shortName;
 	private String name;
@@ -167,5 +180,62 @@ public class Metric{
 		}
 		
 		return value;
+	}
+	
+	/*
+	 * add new property to XML library file
+	 */
+	public void saveMetrictoXMLFile(Path xmlFilePath){
+		try {
+			//Open and read the xml file
+			
+			File xmlFile = xmlFilePath.toFile();
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.parse(xmlFile);
+			
+			//create new property
+			Element eDataTag = doc.getDocumentElement();
+			Element eNewMetric = doc.createElement("Metric");
+			
+			Element eShortName = doc.createElement("ShortName");
+			eShortName.setTextContent(this.shortName);
+			
+			Element eName = doc.createElement("Name");
+			eName.setTextContent(this.name);
+			
+			Element eDesc = doc.createElement("Description"); 
+			eDesc.setTextContent(this.description);
+			
+			Element eType = doc.createElement("Type");
+			eType.setTextContent(this.type);
+			
+			Element eScope = doc.createElement("Scope");
+			eScope.setTextContent(this.scope);
+			
+			Element eEvalExp = doc.createElement("Definition");
+			eEvalExp.setTextContent(this.oclDefinition);
+			
+			eNewMetric.appendChild(eShortName);
+			eNewMetric.appendChild(eName);
+			eNewMetric.appendChild(eDesc);
+			eNewMetric.appendChild(eType);
+			eNewMetric.appendChild(eScope);
+			eNewMetric.appendChild(eEvalExp);
+			
+			eDataTag.appendChild(eNewMetric);
+			
+			//Save to xml file
+			DOMSource source = new DOMSource(doc);
+
+		    TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		    Transformer transformer = transformerFactory.newTransformer();
+		    StreamResult result = new StreamResult(xmlFile);
+		    transformer.transform(source, result);
+		    
+		    JOptionPane.showMessageDialog(null,"New metric is successfully added to the library!");
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(null,"Fail to add new metric to the library!");
+	        e.printStackTrace();}
 	}
 }

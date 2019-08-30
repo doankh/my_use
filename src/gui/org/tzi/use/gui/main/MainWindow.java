@@ -50,7 +50,6 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -89,6 +88,8 @@ import javax.swing.event.InternalFrameEvent;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
+import org.tzi.use.api.UseApiException;
+import org.tzi.use.api.UseModelApi;
 import org.tzi.use.config.Options;
 import org.tzi.use.config.RecentItems;
 import org.tzi.use.config.RecentItems.RecentItemsObserver;
@@ -130,16 +131,12 @@ import org.tzi.use.main.shell.Shell;
 import org.tzi.use.parser.use.USECompiler;
 import org.tzi.use.runtime.gui.impl.PluginActionProxy;
 import org.tzi.use.uml.mm.MClass;
-import org.tzi.use.uml.mm.MInvalidModelException;
 import org.tzi.use.uml.mm.MMInstanceGenerator;
 import org.tzi.use.uml.mm.MModel;
 import org.tzi.use.uml.mm.MOperation;
 import org.tzi.use.uml.mm.ModelFactory;
 import org.tzi.use.uml.mm.statemachines.MProtocolStateMachine;
 import org.tzi.use.uml.mm.statemachines.MStateMachine;
-import org.tzi.use.uml.ocl.expr.Expression;
-import org.tzi.use.uml.ocl.expr.VarDeclList;
-import org.tzi.use.uml.ocl.type.TypeFactory;
 import org.tzi.use.uml.sys.MObject;
 import org.tzi.use.uml.sys.MSystem;
 import org.tzi.use.uml.sys.MSystemException;
@@ -471,7 +468,7 @@ public class MainWindow extends JFrame {
         menu.setEnabled(false);
 		fMenuBar.add(menu);
 		mi = menu.add(new ActionViewCreateClassDiagram(true, false, "Full Metamodel class diagram", ""));
-		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified Metamodel class diagram", ""));
+		mi = menu.add(new ActionViewCreateClassDiagram(true, true, "Simplified class diagram", ""));
 		
 		submenu = new JMenu("Sub Metamodel class diagrams");
 		submenu.setMnemonic('s');
@@ -1267,7 +1264,7 @@ public class MainWindow extends JFrame {
                         fLogWriter, new ModelFactory());
                 fLogWriter.println("done.");
             } catch (IOException ex) {
-                fLogWriter.println("Could not load metamodel.");
+                fLogWriter.println("unable to load metamodel.");
             }
             return model;
             
@@ -1296,50 +1293,48 @@ public class MainWindow extends JFrame {
     	{
     		//load a set metric definitions from external XML file
     		MClass metricClass;
+    		fLogWriter.println("loading user-defined metrics ...");
     		
-    		Path homeDir = Paths.get(System.getProperty("user.dir")); 
-    		File xmlFile;
-    		xmlFile = homeDir.resolve("metamodels").resolve("UserDefinedMetrics.xml").toFile();
-    		Map<String, Metric> userDefinedMetrics = Util.loadMetricDatafromXMLFile(xmlFile);
+    		Map<String, Metric> userDefinedMetrics = Util.loadMetricDatafromXMLFile(Util.userDefinedMetricXMLFile);
     		//add each to ClassMetric or ModelMetric meta class
-    		for (Map.Entry<String, Metric> entry : userDefinedMetrics.entrySet())		
+    		if(userDefinedMetrics != null)
     		{
-    			Metric metric = entry.getValue();
-				metricClass = metric.getScope().equals("Class")?
-						metaSystem.model().getClass("ClassMetrics")
-						:metaSystem.model().getClass("ModelMetrics");   				
-    			
-				if(metricClass != null)
-				{
-					MOperation op = new MOperation(metric.getShortName(),new VarDeclList(true), TypeFactory.mkReal());
-    				Expression expr = Util.compileMetaOCLExpr(metaSystem, metric.getOcldefinition());
-    				try {
-						op.setExpression(expr);
-						metricClass.addOperation(op);
-					} catch (MInvalidModelException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+	    		for (Map.Entry<String, Metric> entry : userDefinedMetrics.entrySet())		
+	    		{
+	    			Metric metric = entry.getValue();
+					metricClass = metric.getScope().equals("Class")?
+							metaSystem.model().getClass("ClassMetrics")
+							:metaSystem.model().getClass("ModelMetrics");   				
+	    			
+					if(metricClass != null)
+					{
+						
+						UseModelApi modelApi = new UseModelApi(metaSystem.model());
+						MOperation op;
+						try {
+							op = modelApi.createQueryOperation(metricClass.name(), metric.getShortName(), new String[0][0], "Real", metric.getOcldefinition());
+						} catch (UseApiException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
+						/*MOperation op = new MOperation(metric.getShortName(),new VarDeclList(true), TypeFactory.mkReal());
+	    				Expression expr = Util.compileMetaOCLExpr1(metaSystem, metric.getOcldefinition());
+	    				try {
+							op.setExpression(expr);
+							metricClass.addOperation(op);
+						} catch (MInvalidModelException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}*/
 					}
-				}
-    			
+	    			
+	    		}
+	    		fLogWriter.println("done.");
     		}
+    		else
+    			fLogWriter.println("unable to load user-defined metrics!");
     	}
-    	/*
-         * Translate a soilcommand to a statement which can be executed from code
-         */
-//        private MStatement translateSoilCommandtoStatement(MSystem fSystem, String line)
-//        {
-//        	MStatement statement = ShellCommandCompiler.compileShellCommand(
-//    				fSystem.model(),
-//    				fSystem.state(),
-//    				fSystem.getVariableEnvironment(),
-//    				line,
-//    				"<input>",
-//    				new PrintWriter(System.err),
-//    				false);
-//
-//        	return statement;
-//        }
     }
 
     private class ActionFileOpenSpecRecent extends ActionFileOpenSpec {

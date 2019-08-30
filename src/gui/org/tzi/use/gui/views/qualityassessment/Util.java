@@ -24,13 +24,18 @@ package org.tzi.use.gui.views.qualityassessment;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.tzi.use.parser.ocl.OCLCompiler;
+import org.tzi.use.uml.mm.MClass;
+import org.tzi.use.uml.mm.MModel;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.sys.MSystem;
 import org.w3c.dom.Document;
@@ -44,6 +49,12 @@ import org.w3c.dom.NodeList;
  *
  */
 public class Util {
+	//**public static const**
+	public static Path preDefinedMetricXMLFile = Paths.get(System.getProperty("user.dir")).resolve("metamodels").resolve("PreDefinedMetrics.xml");
+	public static Path userDefinedMetricXMLFile = Paths.get(System.getProperty("user.dir")).resolve("metamodels").resolve("UserDefinedMetrics.xml");;
+	public static Path designSmellXMLFile = Paths.get(System.getProperty("user.dir")).resolve("metamodels").resolve("DesignSmells.xml");;
+	
+	//**public static methods**
 	public static Expression compileMetaOCLExpr(MSystem metaSystem, String oclExpression){
 		String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
 		
@@ -67,10 +78,34 @@ public class Util {
 		}
 	}
 	
+	//**public static methods**
+		public static Expression compileMetaOCLExpr1(MSystem metaSystem, String oclExpression){
+			String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
+			
+			PrintWriter out;
+			try {
+				out = new PrintWriter(errFilename);
+		  
+		        // compile invariant
+		        Expression expr = OCLCompiler.compileExpression(
+		        		metaSystem.model(),
+		        		oclExpression, 
+		                "Error", 
+		                out, 
+		                metaSystem.varBindings());
+		        	        
+		        out.flush();
+		        return expr;
+			} catch (IOException e) {
+				return null;
+			}
+		}
+	
 	/**
 	 * Read data of the pre-defined metrics from a XML file
 	 */
-	public static HashMap<String,Metric> loadMetricDatafromXMLFile(File xmlFile) {
+	public static HashMap<String,Metric> loadMetricDatafromXMLFile(Path xmlFilePath) {
+		File xmlFile = xmlFilePath.toFile();
 		HashMap<String,Metric> metricData = new HashMap<String,Metric>();
 		try {
 			//Path homeDir = Paths.get(System.getProperty("user.dir")); 
@@ -84,18 +119,20 @@ public class Util {
 				Node nNode = nList.item(i);
 				if(nNode.getNodeType() == Node.ELEMENT_NODE)
 				{
-					Element eElement = (Element) nNode;
-					String shortName = eElement.getElementsByTagName("ShortName").item(0).getTextContent();
-					String scope = eElement.getElementsByTagName("Scope").item(0).getTextContent();
-					Metric metric = new Metric(shortName,
-							eElement.getElementsByTagName("Name").item(0).getTextContent(),
-							eElement.getElementsByTagName("Description").item(0).getTextContent(),
-							eElement.getElementsByTagName("Type").item(0).getTextContent(),
-							scope,
-							eElement.getElementsByTagName("Definition").item(0).getTextContent(),
-							-1.0);
-					//Add 'c' or 'm' to the shortname of the metric to distinguish between class scope metrics and model scope metrics
-					metricData.put((scope.equals("Model")?"m":"c") + shortName, metric);
+					try{
+						Element eElement = (Element) nNode;
+						String shortName = eElement.getElementsByTagName("ShortName").item(0).getTextContent();
+						String scope = eElement.getElementsByTagName("Scope").item(0).getTextContent();
+						Metric metric = new Metric(shortName,
+								eElement.getElementsByTagName("Name").item(0).getTextContent(),
+								eElement.getElementsByTagName("Description").item(0).getTextContent(),
+								eElement.getElementsByTagName("Type").item(0).getTextContent(),
+								scope,
+								eElement.getElementsByTagName("Definition").item(0).getTextContent());
+						//Add 'c' or 'm' to the shortname of the metric to distinguish between class scope metrics and model scope metrics
+						metricData.put((scope.equals("Model")?"m":"c") + shortName, metric);
+					}
+					catch(Exception e){}
 				}
 			}
 			return metricData;
@@ -108,11 +145,21 @@ public class Util {
 	}
 	//check whether a string is a numberic 
 	public static boolean isNumeric(String str) { 
-		  try {  
-		    Double.parseDouble(str);  
-		    return true;
-		  } catch(NumberFormatException e){  
-		    return false;  
-		  }  
-		}
+	  try {  
+	    Double.parseDouble(str);  
+	    return true;
+	  } catch(NumberFormatException e){  
+	    return false;  
+	  }  
+	}
+	
+	//get the list of all classes in the user model
+	public static List<String> getUserModelClassList(MModel model){
+		List<String> classes = new ArrayList<String>();
+		for(MClass cls: model.classes())
+			classes.add(cls.name());
+		return classes;
+	}
+	
+	
 }

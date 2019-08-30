@@ -100,7 +100,7 @@ public class MClassDiagramView extends ClassDiagramView{
 	        		}
         	}
 	        
-	      //Hide unneeded associations
+	       //Hide unneeded classes
 	        Collection<MClass> allMetaClasses = mModel.classes();
 	        for(MClass cls : allMetaClasses)
 	        {

@@ -28,11 +28,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -46,12 +45,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.tzi.use.config.Options;
 import org.tzi.use.gui.main.MainWindow;
@@ -59,6 +52,8 @@ import org.tzi.use.gui.util.CloseOnEscapeKeyListener;
 import org.tzi.use.gui.util.TextComponentWriter;
 import org.tzi.use.main.Session;
 import org.tzi.use.parser.ocl.OCLCompiler;
+import org.tzi.use.uml.mm.MClass;
+import org.tzi.use.uml.mm.MOperation;
 import org.tzi.use.uml.ocl.expr.Evaluator;
 import org.tzi.use.uml.ocl.expr.Expression;
 import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
@@ -66,8 +61,6 @@ import org.tzi.use.uml.ocl.value.Value;
 import org.tzi.use.uml.sys.MSystem;
 import org.tzi.use.util.StringUtil;
 import org.tzi.use.util.TeeWriter;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 /**
  * TODO
@@ -76,7 +69,7 @@ import org.w3c.dom.Element;
  */
 public class AddNewMetric extends JDialog {
 
-private MSystem fMetaSystem;
+	private MSystem fMetaSystem;
 	
 	private final JTextArea fTextShortName;
 
@@ -84,11 +77,13 @@ private MSystem fMetaSystem;
 	
 	private final JTextArea fTextDecs;
 	
-	private final JComboBox fComboType;
+	private final JComboBox<String> fComboType;
 	
-	private final JComboBox fComboMetricList;
+	private final JComboBox<String> fComboMetricList;
 	
-	private final JComboBox fComboScope;
+	private final JComboBox<String> fComboClassList;
+	
+	private final JComboBox<String> fComboScope;
 	
     private final JTextArea fTextIn;
 
@@ -99,14 +94,17 @@ private MSystem fMetaSystem;
     private final JButton btnAdd;
     
     private final JButton btnEval;
-
+    
+    private JPanel p1;
+    
+    private final String classAlias = "_c";
 
 	/**
 	 * Create the dialog.
 	 */
 	@SuppressWarnings("unchecked")
 	public AddNewMetric(final MainWindow parent, final Session session) {
-		super(parent, "Add new quality property to the Library");
+		super(parent, "Add new metric to the library");
     	
     	fMetaSystem = session.metaSystem();
     	
@@ -158,30 +156,58 @@ private MSystem fMetaSystem;
         textDecslabel.setLabelFor(fTextDecs);
         
         String[] types = {"Size","Complexity","OO features","Coupling"};
-        fComboType = new JComboBox(types);
+        fComboType = new JComboBox<String>(types);
         fComboType.setSelectedIndex(0);
         JLabel comboTypeLabel = new JLabel("Type:");
         comboTypeLabel.setLabelFor(fComboType);
         
         String[] scopes = {"Model","Class"};
-        fComboScope = new JComboBox(scopes);
+        fComboScope = new JComboBox<String>(scopes);
         fComboScope.setSelectedIndex(0);
+        fComboScope.addActionListener(new ActionListener() {
+			//if change the scope
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+					populateMetricComboBoxbyScope(); //load the pre-defined metrics to Metric combobox
+					String textInLabelText = "<html>Enter metric definition:";
+					if(fComboScope.getSelectedItem().toString().equals("Class"))
+						textInLabel.setText("<html>Enter metric definition:<br/><b>Context " + classAlias + ": Class </b><html>");
+					//show the combobox allow user choosing a class to validate if the scope of new metric is 'class' 
+					p1.setVisible(fComboScope.getSelectedItem().toString().equals("Class"));
+				}
+		});
         JLabel comboScopeLabel = new JLabel("Scope:");
         comboScopeLabel.setLabelFor(fComboScope);
         
-        String[] metrics = {"Class","Association","Generalization","Property","Operation"};
-        fComboMetricList = new JComboBox(metrics);
-        fComboMetricList.setSelectedIndex(0);
+        fComboMetricList = new JComboBox<String>();
+        populateMetricComboBoxbyScope();
         fComboMetricList.addActionListener(new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				
+				if(fComboMetricList.getSelectedIndex()>0) //if user select a pre-defined metric as a template
+				{
+					String metricName = fComboMetricList.getSelectedItem().toString();
+					MClass metricCls = fMetaSystem.model().getClass(fComboScope.getSelectedItem().toString()+"Metrics");
+					if(metricCls != null)
+					{
+						//load the ocl definition of the selected metric to fTextin text box
+						MOperation metricOp = metricCls.operation(metricName, false);
+						if(metricOp != null) fTextIn.setText(metricOp.expression().toString());
+					}
+				}
 			}
 		});
 
         JLabel comboMetricLabel = new JLabel("Choose a metric as template:");
         comboMetricLabel.setLabelFor(fComboMetricList);
+        
+        fComboClassList = new JComboBox<String>();
+        for(String cls:Util.getUserModelClassList(session.system().model()))
+        	fComboClassList.addItem(cls);
+        JLabel comboClassLabel = new JLabel("Choose a class to evaluate:");
+        comboClassLabel.setLabelFor(fComboClassList);
         
         fTextOut = new JTextArea(5,50);
         fTextOut.setEditable(false);
@@ -220,7 +246,7 @@ private MSystem fMetaSystem;
         textPane.add(Box.createRigidArea(new Dimension(0, 5)));
         
         p = new JPanel(new BorderLayout());
-        p.add(comboMetricLabel, BorderLayout.NORTH);
+        p.add(comboScopeLabel, BorderLayout.NORTH);
         p.add(fComboScope);
         textPane.add(p);        
         textPane.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -237,6 +263,13 @@ private MSystem fMetaSystem;
         textPane.add(p);
         textPane.add(Box.createRigidArea(new Dimension(0, 5)));
         
+        p1 = new JPanel(new BorderLayout());
+        p1.add(comboClassLabel, BorderLayout.NORTH);
+        p1.add(fComboClassList);
+        textPane.add(p1);        
+        textPane.add(Box.createRigidArea(new Dimension(0, 5)));
+        p1.setVisible(false);
+        
         p = new JPanel(new BorderLayout());
         p.add(textOutLabel, BorderLayout.NORTH);
         p.add(new JScrollPane(fTextOut), BorderLayout.CENTER);
@@ -252,7 +285,11 @@ private MSystem fMetaSystem;
         btnEval.addActionListener(new ActionListener() {
             @Override
 			public void actionPerformed(ActionEvent e) {         	
-            		btnAdd.setEnabled(evaluate(fTextIn.getText(), false));
+        		if(fComboScope.getSelectedItem().toString().equals("Class"))
+        			btnAdd.setEnabled(evaluate(createClassMetricEvaluationExp(
+        					fTextIn.getText(), fComboClassList.getSelectedItem().toString()+"Class") , false));
+        		else
+        			btnAdd.setEnabled(evaluate(fTextIn.getText(), false));
             }
         });
         Dimension dim = btnEval.getMaximumSize();
@@ -268,8 +305,14 @@ private MSystem fMetaSystem;
 				if(fTextName.getText().trim().equals(""))
 					JOptionPane.showMessageDialog(null,"The name of the property can be empty!");
 				else
-					addNewMetrictoXMLFile(fTextShortName.getText(), fTextName.getText(), fTextDecs.getText(), fComboType.getSelectedItem().toString(),
-							fComboScope.getSelectedItem().toString(), fTextIn.getText());			
+				{
+					String scope = fComboScope.getSelectedItem().toString();
+					String oclDefinition = createClassMetricDefinition(fTextIn.getText(),scope);
+					Metric m = new Metric(fTextShortName.getText(), fTextName.getText(), fTextDecs.getText(), fComboType.getSelectedItem().toString(),
+							scope, oclDefinition);
+					m.saveMetrictoXMLFile(Util.userDefinedMetricXMLFile);
+				}
+							
 			}
 		});
         dim = btnAdd.getMaximumSize();
@@ -317,7 +360,7 @@ private MSystem fMetaSystem;
         getRootPane().setDefaultButton(btnEval);
 
         pack();
-        setSize(new Dimension(600, 500));
+        setSize(new Dimension(600, 600));
         setLocationRelativeTo(parent);
         fTextIn.requestFocus();
 
@@ -346,8 +389,7 @@ private MSystem fMetaSystem;
         StringWriter msgWriter = new StringWriter();
         PrintWriter out = new PrintWriter(new TeeWriter(
                 new TextComponentWriter(fTextOut), msgWriter), true);
-
-        
+      
         // compile query
         Expression expr = OCLCompiler.compileExpression(
         		evalSystem.model(),
@@ -399,66 +441,44 @@ private MSystem fMetaSystem;
         }
         return check;
     }
-	/*
-	 * add new property to XML library file
-	 */
-	private void addNewMetrictoXMLFile(String shortName, String name, String decs, String type, String scope, String oclExp){
-		try {
-			//Open and read the xml file
-			Path homeDir = Paths.get(System.getProperty("user.dir")); 
-			File xmlFile = homeDir.resolve("metamodels").resolve("UserDefinedMetrics.xml").toFile();
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			Document doc = dBuilder.parse(xmlFile);
-			
-			//create new property
-			Element eDataTag = doc.getDocumentElement();
-			Element eNewProperty = doc.createElement("Metric");
-			
-			Element eShortName = doc.createElement("ShortName");
-			eShortName.setTextContent(name);
-			
-			Element eName = doc.createElement("Name");
-			eName.setTextContent(name);
-			
-			Element eDesc = doc.createElement("Description"); 
-			eDesc.setTextContent(decs);
-			
-			Element eType = doc.createElement("Type");
-			eType.setTextContent(type);
-			
-			Element eScope = doc.createElement("Scope");
-			eScope.setTextContent(scope);
-			
-			Element eEvalExp = doc.createElement("Definition");
-			eEvalExp.setTextContent(oclExp);
-			
-			eNewProperty.appendChild(eName);
-			eNewProperty.appendChild(eName);
-			eNewProperty.appendChild(eDesc);
-			eNewProperty.appendChild(eType);
-			eNewProperty.appendChild(eScope);
-			eNewProperty.appendChild(eEvalExp);
-			
-			eDataTag.appendChild(eNewProperty);
-			
-			//Save to xml file
-			DOMSource source = new DOMSource(doc);
-
-		    TransformerFactory transformerFactory = TransformerFactory.newInstance();
-		    Transformer transformer = transformerFactory.newTransformer();
-		    StreamResult result = new StreamResult(xmlFile);
-		    transformer.transform(source, result);
-		    
-		    JOptionPane.showMessageDialog(null,"New metric is successfully added to the library!");
-		} catch (Exception e) {
-			JOptionPane.showMessageDialog(null,"Fail to add new metric to the library!");
-	        e.printStackTrace();}
+	
+	private void populateMetricComboBoxbyScope()
+	{
+		fComboMetricList.removeAllItems();
+		fComboMetricList.addItem("--");
+		for(String metric:getPreDefinedMetrics(fComboScope.getSelectedItem().toString()))
+			fComboMetricList.addItem(metric);
+		fComboMetricList.setSelectedIndex(0);
 	}
 	
-	private String createEvaluationOCL(String context, String smellDefinition)
+	//get pre-defined metrics from metric classes (not from XML file)
+	private List<String> getPreDefinedMetrics(String scope)
 	{
-		return context + ".allInstances()->exists(e|" + smellDefinition + ")";
+		List<String> metrics = new ArrayList<String>();
+		MClass metricCls = this.fMetaSystem.model().getClass(scope+"Metrics");
+		if(metricCls != null)
+		{
+			for(MOperation op: metricCls.operations())
+				metrics.add(op.name());
+		}
+		return metrics;
+	}
+	
+	/**
+	 * @param textIn: input as metric definition
+	 * @return the ocl expression that can be validated on a chosen class
+	 */
+	private String createClassMetricEvaluationExp(String textIn, String evaluatedClass){
+		return textIn.replaceAll(classAlias, evaluatedClass).replaceAll("self", evaluatedClass);
+	}
+	
+	/**
+	 * @param textIn: user input as metric definition
+	 * @return the ocl definiton that can be save to the XML file
+	 */
+	private String createClassMetricDefinition(String textIn, String scope){
+		textIn = "Context " + scope + ":" + textIn;
+		return textIn.replaceAll("self", "self.class").replaceAll(classAlias, "self.class");
 	}
 	
 	private void closeDialog() {

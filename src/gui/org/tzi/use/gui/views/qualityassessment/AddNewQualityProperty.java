@@ -104,7 +104,7 @@ public class AddNewQualityProperty extends JDialog {
 	 */
 	@SuppressWarnings("unchecked")
 	public AddNewQualityProperty(final Session session, final MainWindow parent) {
-		super(parent, "Add new quality property to the Library");
+		super(parent, "Add new quality property to the library");
     	
     	fMetaSystem = session.metaSystem();
     	

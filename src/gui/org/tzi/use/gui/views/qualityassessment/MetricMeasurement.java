@@ -27,9 +27,6 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,15 +76,10 @@ public class MetricMeasurement extends JDialog {
 		metaSystem = fSession.metaSystem();
 		system = fSession.system();
 		
-		Path homeDir = Paths.get(System.getProperty("user.dir")); 
-		File xmlFile;
-		xmlFile = homeDir.resolve("metamodels").resolve("PreDefinedMetrics.xml").toFile();
-		preDefinedMetricData= Util.loadMetricDatafromXMLFile(xmlFile);
+		preDefinedMetricData= Util.loadMetricDatafromXMLFile(Util.preDefinedMetricXMLFile);
 		
-		xmlFile = homeDir.resolve("metamodels").resolve("UserDefinedMetrics.xml").toFile();
-		userDefinedMetricData= Util.loadMetricDatafromXMLFile(xmlFile);
-		
-		
+		userDefinedMetricData= Util.loadMetricDatafromXMLFile(Util.userDefinedMetricXMLFile);
+			
 		setLayout(new BorderLayout());
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		// Define the panel to hold the buttons 
@@ -99,7 +91,7 @@ public class MetricMeasurement extends JDialog {
         //populate items to the combobox
         fComboClassList = new JComboBox<Object>();
         fComboClassList.addItem("User Model");
-        for(String cls: getClassList())
+        for(String cls: Util.getUserModelClassList(system.model()))
         	fComboClassList.addItem(cls + " Class");
         topPanel.add(fComboClassList);
         
@@ -113,13 +105,14 @@ public class MetricMeasurement extends JDialog {
 				// TODO Auto-generated method stub
 				
 				List<Metric> metrics = new ArrayList<Metric>();
-				if(fComboClassList.getSelectedIndex()==0)
-					metrics = loadModelMetrics();
+				
+				if(fComboClassList.getSelectedIndex()==0)//if model scope metric
+					metrics = loadMetrics("Model", null);
 				else
 				{
 					String clsName = fComboClassList.getSelectedItem().toString();
 					MClass cls = system.model().getClass(clsName.substring(0, clsName.length()-6));
-					if(cls != null) metrics = loadClassMetrics(cls);
+					if(cls != null) metrics = loadMetrics("Class", cls);
 				}
 				tableModel.setList(metrics);
 			}
@@ -171,63 +164,30 @@ public class MetricMeasurement extends JDialog {
 	}
 	
 	/**
-	 * calculate class scope metrics of the class cls
-	 * @return 
-	 */
-	private List<Metric> loadClassMetrics(MClass cls) {
-		List<Metric> metrics = new ArrayList<Metric>();
-		Metric metric;
-		//get the meta class containing class scope pre-defined metric definitions
-		MClass metricCls = metaSystem.model().getClass("ClassMetrics");
-		if(metricCls != null)
-		{
-			for(MOperation op: metricCls.operations())
-			{
-				metric = preDefinedMetricData.get("c"+op.name());
-				if(metric == null)
-					metric = new Metric(op.name(),"","","","Class","",-1);
-				else
-				{
-					metric.setShortName(op.name());
-					metric.setScope("Class");
-				}
-				metric.setValue(metric.evaluate(metaSystem, cls));
-				//add the metric to the result 
-				metrics.add(metric);
-			}
-		}
-		//get the meta class containing class scope pre-defined metric definitions
-		for (Map.Entry<String, Metric> entry : userDefinedMetricData.entrySet())		
-		{
-			metric = entry.getValue();
-			if(metric.getScope().equals("Class"))
-				metric.setValue(metric.evaluate(metaSystem, cls));
-		}
-		return metrics;
-	}
-	
-	/**
-	 * calculate model scope metric of the user model
+	 * Calculate the metric of model/ a class
+	 * @param scope: model or class
+	 * @param cls: class to be measured if the scope = class
 	 * @return
 	 */
-	private List<Metric> loadModelMetrics() {
+	private List<Metric> loadMetrics(String scope, MClass cls) {
 		List<Metric> metrics = new ArrayList<Metric>();
 		Metric metric;
-		//get the meta class containing model scope metric definitions
-		MClass metricCls = metaSystem.model().getClass("ModelMetrics");
+		//load pre-defined metric measurement
+		MClass metricCls = metaSystem.model().getClass(scope+"Metrics");
 		if(metricCls != null)
 		{
 			for(MOperation op: metricCls.operations())
 			{
-				metric = preDefinedMetricData.get("m"+op.name());
+				metric = getMetricDefinition(scope, op.name());
 				if(metric == null)
-					metric = new Metric(op.name(),"","","","Model","",-1);
+					metric = new Metric(op.name(),"","","",scope,"");
 				else
 				{
+					//reset the info in case the info in the XML file is not correct
 					metric.setShortName(op.name());
-					metric.setScope("Model");
+					metric.setScope(scope);
 				}
-				metric.setValue(metric.evaluate(metaSystem, null));
+				metric.setValue(metric.evaluate(metaSystem, scope.equals("Model")? null: cls));
 				//add the metric to the result 
 				metrics.add(metric);
 			}
@@ -235,14 +195,17 @@ public class MetricMeasurement extends JDialog {
 		
 		return metrics;
 	}
-
-	//get the list of all classes in the user model
-	private List<String> getClassList(){
-		List<String> classes = new ArrayList<String>();
-		for(MClass cls: system.model().classes())
-			classes.add(cls.name());
-		return classes;
+	
+	//get metric definition from external xml file
+	private Metric getMetricDefinition(String scope, String metricShortName){
+		Metric metric;
+		//search in pre-defined metric list first
+		metric = preDefinedMetricData.get((scope.equals("Model")?"m":"c") + metricShortName);
+		if(metric == null) //if not found, then search in user-defined metric list first
+			metric = userDefinedMetricData.get((scope.equals("Model")?"m":"c") + metricShortName);
+		return metric;
 	}
+	
 	
 }
 
