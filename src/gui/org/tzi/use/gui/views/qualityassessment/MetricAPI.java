@@ -48,7 +48,7 @@ import org.w3c.dom.NodeList;
  * @author Khanh-Hoang Doan
  *
  */
-public class Util {
+public class MetricAPI {
 	//**public static const**
 	public static Path preDefinedMetricXMLFile = Paths.get(System.getProperty("user.dir")).resolve("metamodels").resolve("PreDefinedMetrics.xml");
 	public static Path userDefinedMetricXMLFile = Paths.get(System.getProperty("user.dir")).resolve("metamodels").resolve("UserDefinedMetrics.xml");;

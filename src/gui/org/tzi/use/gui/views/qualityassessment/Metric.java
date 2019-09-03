@@ -169,7 +169,7 @@ public class Metric{
 		metricRetrievalExpr = this.scope.equals("Model")?
 				"ModelMetrics." + this.shortName + "()"
 				: cls.name()+ "Class.metrics." + this.shortName + "()";
-		Expression expr = Util.compileMetaOCLExpr(metaSystem, metricRetrievalExpr);
+		Expression expr = MetricAPI.compileMetaOCLExpr(metaSystem, metricRetrievalExpr);
 		//evaluate the expression on the metamode level to get the metric value
 		if(expr != null)
 		{

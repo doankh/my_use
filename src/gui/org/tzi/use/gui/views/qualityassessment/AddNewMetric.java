@@ -173,6 +173,8 @@ public class AddNewMetric extends JDialog {
 					String textInLabelText = "<html>Enter metric definition:";
 					if(fComboScope.getSelectedItem().toString().equals("Class"))
 						textInLabel.setText("<html>Enter metric definition:<br/><b>Context " + classAlias + ": Class </b><html>");
+					else
+						textInLabelText = "<html>Enter metric definition:";
 					//show the combobox allow user choosing a class to validate if the scope of new metric is 'class' 
 					p1.setVisible(fComboScope.getSelectedItem().toString().equals("Class"));
 				}
@@ -204,7 +206,7 @@ public class AddNewMetric extends JDialog {
         comboMetricLabel.setLabelFor(fComboMetricList);
         
         fComboClassList = new JComboBox<String>();
-        for(String cls:Util.getUserModelClassList(session.system().model()))
+        for(String cls:MetricAPI.getUserModelClassList(session.system().model()))
         	fComboClassList.addItem(cls);
         JLabel comboClassLabel = new JLabel("Choose a class to evaluate:");
         comboClassLabel.setLabelFor(fComboClassList);
@@ -307,10 +309,10 @@ public class AddNewMetric extends JDialog {
 				else
 				{
 					String scope = fComboScope.getSelectedItem().toString();
-					String oclDefinition = createClassMetricDefinition(fTextIn.getText(),scope);
+					String oclDefinition = scope.equals("Model")? fTextIn.getText(): createClassMetricDefinition(fTextIn.getText(),scope);
 					Metric m = new Metric(fTextShortName.getText(), fTextName.getText(), fTextDecs.getText(), fComboType.getSelectedItem().toString(),
 							scope, oclDefinition);
-					m.saveMetrictoXMLFile(Util.userDefinedMetricXMLFile);
+					m.saveMetrictoXMLFile(MetricAPI.userDefinedMetricXMLFile);
 				}
 							
 			}
@@ -477,7 +479,6 @@ public class AddNewMetric extends JDialog {
 	 * @return the ocl definiton that can be save to the XML file
 	 */
 	private String createClassMetricDefinition(String textIn, String scope){
-		textIn = "Context " + scope + ":" + textIn;
 		return textIn.replaceAll("self", "self.class").replaceAll(classAlias, "self.class");
 	}
 	

@@ -121,7 +121,7 @@ import org.tzi.use.gui.views.qualityassessment.Metric;
 import org.tzi.use.gui.views.qualityassessment.MetricMeasurement;
 import org.tzi.use.gui.views.qualityassessment.MetricsEvaluation;
 import org.tzi.use.gui.views.qualityassessment.QualityPropertiesEval;
-import org.tzi.use.gui.views.qualityassessment.Util;
+import org.tzi.use.gui.views.qualityassessment.MetricAPI;
 import org.tzi.use.main.ChangeEvent;
 import org.tzi.use.main.ChangeListener;
 import org.tzi.use.main.Session;
@@ -1295,7 +1295,7 @@ public class MainWindow extends JFrame {
     		MClass metricClass;
     		fLogWriter.println("loading user-defined metrics ...");
     		
-    		Map<String, Metric> userDefinedMetrics = Util.loadMetricDatafromXMLFile(Util.userDefinedMetricXMLFile);
+    		Map<String, Metric> userDefinedMetrics = MetricAPI.loadMetricDatafromXMLFile(MetricAPI.userDefinedMetricXMLFile);
     		//add each to ClassMetric or ModelMetric meta class
     		if(userDefinedMetrics != null)
     		{

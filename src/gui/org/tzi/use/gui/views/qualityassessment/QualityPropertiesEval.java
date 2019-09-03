@@ -225,7 +225,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 							eElement.getElementsByTagName("SelectExpression").item(0).getTextContent(),
 							eElement.getElementsByTagName("Context").item(0).getTextContent());
 					        	        
-			        Expression expr = Util.compileMetaOCLExpr(metaSystem, property.getOclExpression());
+			        Expression expr = MetricAPI.compileMetaOCLExpr(metaSystem, property.getOclExpression());
 			        try {
 			        	if(expr == null) //if there is an error in compiling the Ocl expression
 			        		property.setIsValidOclExpression(false);

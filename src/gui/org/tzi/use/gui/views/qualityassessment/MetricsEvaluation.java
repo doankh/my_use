@@ -137,7 +137,7 @@ public class MetricsEvaluation extends JPanel implements View{
 							}
 							evaluationInv = config.createEvaluationInvariant();
 							
-							Expression expr = Util.compileMetaOCLExpr(metaSystem, evaluationInv);
+							Expression expr = MetricAPI.compileMetaOCLExpr(metaSystem, evaluationInv);
 							if(expr!= null)
 						        try {
 						            // evaluate it with current system state
@@ -230,12 +230,12 @@ public class MetricsEvaluation extends JPanel implements View{
 				result = false;
 				fLogWriter.println(prefix + "Metric scope parameter must be 0 or 1");
 			}
-			if(!Util.isNumeric(setting[2]))
+			if(!MetricAPI.isNumeric(setting[2]))
 			{
 				result = false;
 				fLogWriter.println(prefix + "The lower threshold must be a number");
 			}
-			if(!Util.isNumeric(setting[3]))
+			if(!MetricAPI.isNumeric(setting[3]))
 			{
 				result = false;
 				fLogWriter.println(prefix + "The upper threshold must be a number");

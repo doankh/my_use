@@ -76,9 +76,9 @@ public class MetricMeasurement extends JDialog {
 		metaSystem = fSession.metaSystem();
 		system = fSession.system();
 		
-		preDefinedMetricData= Util.loadMetricDatafromXMLFile(Util.preDefinedMetricXMLFile);
+		preDefinedMetricData= MetricAPI.loadMetricDatafromXMLFile(MetricAPI.preDefinedMetricXMLFile);
 		
-		userDefinedMetricData= Util.loadMetricDatafromXMLFile(Util.userDefinedMetricXMLFile);
+		userDefinedMetricData= MetricAPI.loadMetricDatafromXMLFile(MetricAPI.userDefinedMetricXMLFile);
 			
 		setLayout(new BorderLayout());
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -91,7 +91,7 @@ public class MetricMeasurement extends JDialog {
         //populate items to the combobox
         fComboClassList = new JComboBox<Object>();
         fComboClassList.addItem("User Model");
-        for(String cls: Util.getUserModelClassList(system.model()))
+        for(String cls: MetricAPI.getUserModelClassList(system.model()))
         	fComboClassList.addItem(cls + " Class");
         topPanel.add(fComboClassList);
         
