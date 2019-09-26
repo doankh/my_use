@@ -280,4 +280,4 @@
       <Context>Association</Context>
     </DesignSmell>
 	
-<DesignSmell><Name>Abstract class without subclass</Name><Desc>An abstract class should have a subclass</Desc><Type>Design</Type><Severity>Medium</Severity><OCLexpression>Class.allInstances()-&gt;exists(e|e.isAbstract and e.subClass-&gt;isEmpty())</OCLexpression><SelectExpression>Class.allInstances()-&gt;select(e|e.isAbstract and e.subClass-&gt;isEmpty())</SelectExpression><Context>Class</Context></DesignSmell></root>
+</root>

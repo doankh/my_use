@@ -3042,6 +3042,7 @@ operations
 		Class.allInstances()->excluding(self.class)->select(c|isCoupledbyAttribute(c) 
 		or isCoupledbyParameter(c))->size()
 	
+	--$NEW_CLASS_METRIC$--
 end
 
 association A_ClassMetrics_metrics_Class_class between
@@ -3092,4 +3093,6 @@ operations
 	--3.4. Abstractness (A)
 	A(): Real =
 		(Class.allInstances()->select(c|c.isAbstract = true)->size())/DSC()
+	
+	--$NEW_MODEL_METRIC$--
 end

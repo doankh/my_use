@@ -170,7 +170,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 		
 		//button Addnew
 		JPanel btnPanel = new JPanel(new FlowLayout());
-		btnAddNew = new JButton("Add New Smell");
+		btnAddNew = new JButton("Add New Smell Definition");
 		btnAddNew.addActionListener(new ActionListener() {
 			
 			@Override

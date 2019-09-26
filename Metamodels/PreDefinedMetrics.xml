@@ -6,6 +6,7 @@
       <Description>Total number of classes in the design</Description>
       <Type>Size</Type>
       <Scope>Model</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NAssoc</ShortName>
@@ -14,6 +15,7 @@
 associations within a class diagram</Description>
       <Type>Size</Type>
       <Scope>Model</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NOA</ShortName>
@@ -21,6 +23,7 @@ associations within a class diagram</Description>
       <Description>Number of attributes of a class</Description>
       <Type>Size</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NOM</ShortName>
@@ -28,6 +31,7 @@ associations within a class diagram</Description>
       <Description>Number of local methods of a class. The inheritance  methods are not taken into account</Description>
       <Type>Size</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>SIZE2</ShortName>
@@ -35,6 +39,7 @@ associations within a class diagram</Description>
       <Description>SIZE2 = NOA + NOM</Description>
       <Type>Size</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>APPM</ShortName>
@@ -42,6 +47,7 @@ associations within a class diagram</Description>
       <Description>Average Parameters per Method = TotalOfMethodsParameters/TotalNumberOfMethods</Description>
       <Type>Size</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NOC</ShortName>
@@ -49,6 +55,7 @@ associations within a class diagram</Description>
       <Description>Number of direct children class inherited from the class</Description>
       <Type>Complexity</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NOH</ShortName>
@@ -56,6 +63,7 @@ associations within a class diagram</Description>
       <Description>Number of hierarchy trees in the model</Description>
       <Type>Complexity</Type>
       <Scope>Model</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>DIT</ShortName>
@@ -63,6 +71,7 @@ associations within a class diagram</Description>
       <Description>The DIT value for a class within a generalization hierarchy is the length of the longest path from the class to the root of the hierarchy</Description>
       <Type>Complexity</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>MaxDIT</ShortName>
@@ -71,6 +80,7 @@ associations within a class diagram</Description>
 DIT value obtained for each class of the class diagram</Description>
       <Type>Complexity</Type>
       <Scope>Model</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>SIX</ShortName>
@@ -78,6 +88,7 @@ DIT value obtained for each class of the class diagram</Description>
       <Description>Specialization index</Description>
       <Type>Complexity</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NMI</ShortName>
@@ -85,6 +96,7 @@ DIT value obtained for each class of the class diagram</Description>
       <Description>The Number of Methods Inherited metric is the total number of method inherited by a subclass. </Description>
       <Type>OO design</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NMO</ShortName>
@@ -92,6 +104,7 @@ DIT value obtained for each class of the class diagram</Description>
       <Description>The metric counts the total number of methods overridden by a subclass.</Description>
       <Type>OO design</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>AIF</ShortName>
@@ -99,6 +112,7 @@ DIT value obtained for each class of the class diagram</Description>
       <Description>The Attribute Inheritance Factor is defined as a quotient between the sum of inherited attributes in all classes of the system under consideration and the total number of available attributes (locally defined plus inherited) for all classes.</Description>
       <Type>OO design</Type>
       <Scope>Model</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>MIF</ShortName>
@@ -107,6 +121,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>OO design</Type>
       <Scope>Model</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>PF</ShortName>
@@ -115,6 +130,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>OO design</Type>
       <Scope>Model</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>A</ShortName>
@@ -123,6 +139,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>OO design</Type>
       <Scope>Model</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>CBO</ShortName>
@@ -131,6 +148,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>Coupling</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric> 	
       <ShortName>DAC</ShortName>
@@ -139,6 +157,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>Coupling</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>DAC1</ShortName>
@@ -147,6 +166,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>Coupling</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NAS</ShortName>
@@ -155,6 +175,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>Coupling</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>DCC</ShortName>
@@ -163,6 +184,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>Coupling</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NOAC</ShortName>
@@ -171,6 +193,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>Complexity</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NODC</ShortName>
@@ -179,6 +202,7 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>Complexity</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
     <Metric>
       <ShortName>NOH</ShortName>
@@ -186,6 +210,7 @@ DIT value obtained for each class of the class diagram</Description>
       <Description>The number of hierarchies (inheritance trees) from this class to the root classes</Description>
       <Type>Complexity</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
   <Metric>
       <ShortName>NAI</ShortName>
@@ -194,5 +219,6 @@ DIT value obtained for each class of the class diagram</Description>
        </Description>
       <Type>OO Design</Type>
       <Scope>Class</Scope>
+	  <Definition></Definition>
   </Metric>
 </Root>
