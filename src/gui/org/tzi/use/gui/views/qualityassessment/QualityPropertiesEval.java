@@ -30,8 +30,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -204,8 +202,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 	public List<QualityProperty> loadPropertyLibrary(){
 		List<QualityProperty> result = new ArrayList<QualityProperty>();
 		try {
-			Path homeDir = Paths.get(System.getProperty("user.dir")); 
-			File xmlFile = homeDir.resolve("metamodels").resolve("DesignSmells.xml").toFile();
+			File xmlFile = MetricAPI.designSmellXMLFile.toFile();
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(xmlFile);

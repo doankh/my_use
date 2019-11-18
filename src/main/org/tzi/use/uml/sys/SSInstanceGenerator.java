@@ -28,7 +28,9 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
+import org.tzi.use.main.Session;
 import org.tzi.use.uml.mm.MAttribute;
+import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.mm.MMInstanceGenerator;
 import org.tzi.use.uml.ocl.value.Value;
 
@@ -39,19 +41,23 @@ import org.tzi.use.uml.ocl.value.Value;
  */
 public final class SSInstanceGenerator implements SSVisitor {
 	private MSystemState systemState;
+	private MSystem metaSystem;
 	private MMInstanceGenerator mmInstanceGen;
 	private LinkedList<String> soilCommands = new LinkedList<String>();
+	private int idStringValueName;
 	Map<String,Set<String>> mClassMapping = new HashMap<String, Set<String>>();
 	Map<String,Set<String>> mAssociationMapping = new HashMap<String, Set<String>>();
 	//store the map of <name of link, max index value>
 	Map<String, Integer> mLinkId = new HashMap<String, Integer>();
-	
+	//store the map of <name of InstanceValue instance, max index value>
+	Map<String, Integer> mInstanceValueId = new HashMap<String, Integer>();
 	/**
 	 * @param state
 	 */
 
-	public SSInstanceGenerator(MSystemState _systemState){
-		systemState = _systemState;
+	public SSInstanceGenerator(Session fSession){
+		systemState = fSession.system().state();
+		metaSystem = fSession.metaSystem();
 		mmInstanceGen = new MMInstanceGenerator();
 	}
 	
@@ -92,8 +98,13 @@ public final class SSInstanceGenerator implements SSVisitor {
 	@Override
 	public void visitSystemState() {
 		// TODO Auto-generated method stub
+		idStringValueName =0;
+		
 		for(MObject obj: systemState.allObjects())
 			visitObject(obj);
+		
+		for(MObject obj: systemState.allObjects())
+			visitObjectforAttributes(obj);
 		
 		for(MLink link: systemState.allLinks())
 			visitLink(link);
@@ -106,17 +117,21 @@ public final class SSInstanceGenerator implements SSVisitor {
 		soilCommands.add("set " + id + ".name := '" + obj.name() + "'");
 		soilCommands.add(genInsertLink(id, mmInstanceGen.createInstanceName(obj.cls(), "Class", null),
 				"A_InstanceSpecification_InstanceSpecification_Classifier_Classifier"));
-		String id1 = genInstance(obj.name(), null, "InstanceValue", "IV");
-		soilCommands.add(genInsertLink(id1, id, "A_InstanceValue_InstanceValue_InstanceSpecification_Instance"));
+//		String id1 = genInstance(obj.name(), null, "InstanceValue", "IV");
+//		soilCommands.add(genInsertLink(id1, id, "A_InstanceValue_InstanceValue_InstanceSpecification_Instance"));
+			
+	}
 		
+	
+	@Override
+	public void visitObjectforAttributes(MObject obj) {
 		//visit attribute value
 		for(MAttribute attr: obj.cls().allAttributes()){
+			String id = createInstanceName(obj.name(), null, "InstanceSpecification", "IS");
 			visitAttribute(attr, id);
 			visitValue(obj.state(systemState).attributeValue(attr), attr, id);
-		}
-		
+		};
 	}
-
 	@Override
 	public void visitAttribute(MAttribute attribute, String objectInstanceName) {
 		// TODO Auto-generated method stub
@@ -129,13 +144,25 @@ public final class SSInstanceGenerator implements SSVisitor {
 
 	@Override
 	public void visitValue(Value value, MAttribute attr, String objectInstanceName) {
-		// TODO Auto-generated method stub
+		// TODO visit value with the type of user-defined Class (attr.type().isTypeofClass() == true)
+		//visit value with Null value (metaClass = "LiteralNull")
 		String metaClass, shortName = null;
-		int idStringValueName = 0;
+		
 		if(attr.type().isTypeOfInteger()) {metaClass = "LiteralInteger"; shortName = "Int" + value.toString() + "_";}
 		else if(attr.type().isTypeOfReal()) {metaClass = "LiteralReal"; shortName = "Real" + value.toString().replace(".", "_") + "_";}
 		else if(attr.type().isTypeOfBoolean()) {metaClass = "LiteralBoolean"; shortName = "Bool" + value.toString() + "_";}
-		else if(attr.type().isTypeOfString()) {metaClass = "LiteralString"; shortName = "String" + (++idStringValueName) + "_" + value.toString();}
+		else if(attr.type().isTypeOfString()) {metaClass = "LiteralString"; shortName = "String" + (++idStringValueName);}
+		else if(attr.type().isTypeOfClass())
+		{
+			String newInstanceValueName = getNewInstanceValueName(value.toString());
+			String instanceValueID = genInstance(newInstanceValueName, null, "InstanceValue", "IV");
+			//insert a link to the corresponding IS
+			soilCommands.add(genInsertLink(instanceValueID, createInstanceName(value.toString(),null, "InstanceSpecification", "IS"), 
+					"A_InstanceValue_InstanceValue_InstanceSpecification_Instance"));
+			soilCommands.add(genInsertLink(createInstanceName(attr.name(), objectInstanceName, "Slot", "Slot"), instanceValueID,
+					"C_Slot_OwningSlot_ValueSpecification_Value"));
+			metaClass = null;
+		}
 		else metaClass = null;
 		if (metaClass != null)
 		{
@@ -178,10 +205,53 @@ public final class SSInstanceGenerator implements SSVisitor {
 		soilCommands.add(genInsertLink(linkInstanceName, id, "C_InstanceSpecification_OwningInctance_Slot_OwnedElement"));
 		soilCommands.add(genInsertLink(id, mmInstanceGen.createInstanceName(role.associationEnd(), "Property", role.associationEnd().association().name()),
 				"A_Slot_Slot_StructuralFeature_DefiningFeature"));
-		soilCommands.add(genInsertLink(id, createInstanceName(role.object().name(), null, "InstanceValue", "IV"), "C_Slot_OwningSlot_ValueSpecification_Value"));
+		//an instance of InstanceValue corresponding to the object (ValueSpecification)
+		//is created to connect to a the created role 
+		String newInstanceValueName = getNewInstanceValueName(role.object().name());
+		
+		String instanceValueID = genInstance(newInstanceValueName, null, "InstanceValue", "IV");
+		//insert a link to the corresponding IS
+		soilCommands.add(genInsertLink(instanceValueID, createInstanceName(role.object().name(),null, "InstanceSpecification", "IS"), 
+				"A_InstanceValue_InstanceValue_InstanceSpecification_Instance"));
+		//insert a link to the corresponding slot (role)
+		soilCommands.add(genInsertLink(id, instanceValueID, "C_Slot_OwningSlot_ValueSpecification_Value"));
 	}
-
+	
     public LinkedList<String> getGeneratedShellCommands(){
     	return soilCommands;
+    }
+    
+    //delete all metainstantiation of the object model
+    public void deleteMetaInstances(){
+    	Set<String> metaClasseNames = new HashSet<String>(Arrays.asList("InstanceSpecification", "InstanceValue",
+				"Slot", "LiteralInteger", "LiteralReal", "LiteralBoolean", "LiteralString", "LiteralReal", "LiteralNull"));
+		Set<MObject> metaObjectperClass = new HashSet<MObject>();
+		
+		for(String metaClassName: metaClasseNames){
+			MClass metaClass =  metaSystem.model().getClass(metaClassName);
+			if(metaClass != null)
+			{
+				metaObjectperClass = metaSystem.state().objectsOfClass(metaClass);
+				for(MObject obj: metaObjectperClass)
+					metaSystem.state().deleteObject(obj);
+			}
+		}
+    }
+    
+    private String getNewInstanceValueName(String objectName)
+    {
+    	int newInstanceValueId;
+		if(!mInstanceValueId.containsKey(objectName))
+		{
+			newInstanceValueId = 1;
+			mInstanceValueId.put(objectName, newInstanceValueId);
+		}
+		else
+		{
+			newInstanceValueId = mInstanceValueId.get(objectName);
+			newInstanceValueId++;
+			mInstanceValueId.replace(objectName, newInstanceValueId);
+		}
+		return objectName+newInstanceValueId;
     }
 }

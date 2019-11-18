@@ -407,7 +407,7 @@ public class ObjectSelection {
 	}
 
 	/**
-	 * Formatiere Link-Bezeichung für die GUI-Anzeige.
+	 * Formatiere Link-Bezeichung fur die GUI-Anzeige.
 	 * Vorgabe Martin:
 	 * Wenn nicht reflexiv, dann Format von [AssocName : (role1:Object1, role2:Object2)] nach AssocName (Object1, Object2)
 	 * Wenn reflexiv, dann Format von [AssocName : (role1:Object1, role2:Object2)] nach AssocName (role1:Object1, role2:Object2) 
@@ -646,7 +646,7 @@ public class ObjectSelection {
 					});
 					assocMenu.add(linkItem);
 				}
-				// isVirtual für derrived
+				// isVirtual fur derrived
 			}
 			// Ende: Add Action for all links of one assoc
 

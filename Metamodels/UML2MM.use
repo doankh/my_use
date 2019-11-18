@@ -1012,6 +1012,30 @@ UML 2.3 p. 84:
 An instance specification is a model element that represents an instance in a modeled system.
 */
 class InstanceSpecification < PackageableElement
+  operations
+	/*
+	oclType(), already defined in OCL Specification 2.3.1, p. 147:
+		Evaluates to the type of which self is an instance.
+	*/
+	oclType(): Set(Classifier) =
+		self.classifier
+	/*
+	new op, extend UML:
+		navigate from an InstanceSpecification through a role name
+		return: a Bag() of InstanceSpecifications connect to self through the role name
+	*/
+	navigate(roleName: String): Bag(InstanceSpecification) =
+		self.notNavigableInstance.owningSlot
+			.owningInstance.slot->select(definingFeature.name=roleName).value
+				->collect(iv|iv.oclAsType(InstanceValue).instance)->excluding(self)
+				
+	/*
+	new op, extend UML:
+		get the value of an attribute of an InstanceSpecification through the attribute name
+	*/
+	attribute(attrName: String): ValueSpecification =
+		self.slot->select(definingFeature.name=attrName).value->asSequence()->first()
+		
   constraints
     /*
 	UML 2.3 p. 85:

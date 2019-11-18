@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +32,7 @@ import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.tzi.use.config.Options;
 import org.tzi.use.parser.ocl.OCLCompiler;
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.mm.MModel;
@@ -50,13 +50,13 @@ import org.w3c.dom.NodeList;
  */
 public class MetricAPI {
 	//**public static const**
-	public static Path preDefinedMetricXMLFile = Paths.get(System.getProperty("user.dir")).resolve("metamodels").resolve("PreDefinedMetrics.xml");
-	public static Path userDefinedMetricXMLFile = Paths.get(System.getProperty("user.dir")).resolve("metamodels").resolve("UserDefinedMetrics.xml");;
-	public static Path designSmellXMLFile = Paths.get(System.getProperty("user.dir")).resolve("metamodels").resolve("DesignSmells.xml");;
+	public static Path preDefinedMetricXMLFile = Options.homeDir.resolve("Metamodels").resolve("PreDefinedMetrics.xml");
+	public static Path userDefinedMetricXMLFile = Options.homeDir.resolve("Metamodels").resolve("UserDefinedMetrics.xml");
+	public static Path designSmellXMLFile = Options.homeDir.resolve("Metamodels").resolve("DesignSmells.xml");
 	
 	//**public static methods**
 	public static Expression compileMetaOCLExpr(MSystem metaSystem, String oclExpression){
-		String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
+		String errFilename = Options.homeDir.resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
 		
 		PrintWriter out;
 		try {
@@ -79,27 +79,27 @@ public class MetricAPI {
 	}
 	
 	//**public static methods**
-		public static Expression compileMetaOCLExpr1(MSystem metaSystem, String oclExpression){
-			String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
-			
-			PrintWriter out;
-			try {
-				out = new PrintWriter(errFilename);
-		  
-		        // compile invariant
-		        Expression expr = OCLCompiler.compileExpression(
-		        		metaSystem.model(),
-		        		oclExpression, 
-		                "Error", 
-		                out, 
-		                metaSystem.varBindings());
-		        	        
-		        out.flush();
-		        return expr;
-			} catch (IOException e) {
-				return null;
-			}
+	/*public static Expression compileMetaOCLExpr1(MSystem metaSystem, String oclExpression){
+		String errFilename = Options.homeDir.resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
+		
+		PrintWriter out;
+		try {
+			out = new PrintWriter(errFilename);
+	  
+	        // compile invariant
+			Expression expr = OCLCompiler.compileExpression(
+	    		metaSystem.model(),
+	    		oclExpression,
+	            "Error",
+                out,
+                metaSystem.varBindings());
+	        	        
+	        out.flush();
+	        return expr;
+		} catch (IOException e) {
+			return null;
 		}
+	}*/
 	
 	/**
 	 * Read data of the pre-defined metrics from a XML file

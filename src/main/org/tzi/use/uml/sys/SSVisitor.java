@@ -32,6 +32,7 @@ import org.tzi.use.uml.ocl.value.Value;
 public interface SSVisitor {
 	void visitSystemState();
 	void visitObject(MObject object);
+	void visitObjectforAttributes(MObject object);
 	void visitAttribute(MAttribute attribute, String parentObjectInstanceName);
 	void visitLink(MLink link);
 	void visitRole(MLinkEnd role, String linkInstanceName);

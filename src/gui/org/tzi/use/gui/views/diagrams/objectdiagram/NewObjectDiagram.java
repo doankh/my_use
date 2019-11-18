@@ -1443,7 +1443,7 @@ public class NewObjectDiagram extends DiagramViewWithObjectNode implements Highl
 			
 			
 
-			// erstelle Action für greyed
+			// erstelle Action for greyed
 			if (selectedObjects.size() == 1) {
 				MObject obj = selectedObjects.iterator().next();
 				if (visibleData.fObjectToNodeMap.containsKey(obj)) {

@@ -118,10 +118,10 @@ import org.tzi.use.gui.views.diagrams.objectdiagram.NewObjectDiagramView;
 import org.tzi.use.gui.views.diagrams.statemachine.StateMachineDiagramView;
 import org.tzi.use.gui.views.qualityassessment.AddNewMetric;
 import org.tzi.use.gui.views.qualityassessment.Metric;
+import org.tzi.use.gui.views.qualityassessment.MetricAPI;
 import org.tzi.use.gui.views.qualityassessment.MetricMeasurement;
 import org.tzi.use.gui.views.qualityassessment.MetricsEvaluation;
 import org.tzi.use.gui.views.qualityassessment.QualityPropertiesEval;
-import org.tzi.use.gui.views.qualityassessment.MetricAPI;
 import org.tzi.use.main.ChangeEvent;
 import org.tzi.use.main.ChangeListener;
 import org.tzi.use.main.Session;
@@ -1875,26 +1875,12 @@ public class MainWindow extends JFrame {
 		public void actionPerformed(ActionEvent e) {
 			metaInstanceGeneration();
 		}
-		private void deleteMetaInstances(){
-			Set<String> metaClasseNames = new HashSet<String>(Arrays.asList("InstanceSpecification", "InstanceValue",
-					"Slot", "LiteralInteger", "LiteralReal", "LiteralBoolean", "LiteralString"));
-			Set<MObject> metaObjectperClass = new HashSet<MObject>();
-			
-			for(String metaClassName: metaClasseNames){
-				MClass metaClass =  fSession.metaSystem().model().getClass(metaClassName);
-				if(metaClass != null)
-				{
-					metaObjectperClass = fSession.metaSystem().state().objectsOfClass(metaClass);
-					for(MObject obj: metaObjectperClass)
-						fSession.metaSystem().state().deleteObject(obj);
-				}
-			}
-		}
+		
 		
 		private void metaInstanceGeneration(){
-			SSInstanceGenerator instanceGenerator = new SSInstanceGenerator(fSession.system().state());
+			SSInstanceGenerator instanceGenerator = new SSInstanceGenerator(fSession);
 			//delete meta instances that previously generated before generate meta instances of the current System State
-			deleteMetaInstances();
+			instanceGenerator.deleteMetaInstances();
 			instanceGenerator.visitSystemState();
 			LinkedList<String> genSoilCommands = instanceGenerator.getGeneratedShellCommands();	
     		

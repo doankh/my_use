@@ -31,8 +31,6 @@ import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -392,8 +390,7 @@ public class AddNewQualityProperty extends JDialog {
 	private void addNewPropertytoXMLFile(String name, String decs, String type, String severity, String context, String oclExp){
 		try {
 			//Open and read the xml file
-			Path homeDir = Paths.get(System.getProperty("user.dir")); 
-			File xmlFile = homeDir.resolve("metamodels").resolve("DesignSmells.xml").toFile();
+			File xmlFile = MetricAPI.designSmellXMLFile.toFile();
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(xmlFile);
