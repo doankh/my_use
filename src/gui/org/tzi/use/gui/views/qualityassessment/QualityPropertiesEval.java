@@ -29,7 +29,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,21 +49,11 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.tzi.use.gui.main.MainWindow;
 import org.tzi.use.gui.views.View;
 import org.tzi.use.main.Session;
-import org.tzi.use.uml.ocl.expr.Evaluator;
-import org.tzi.use.uml.ocl.expr.Expression;
-import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
-import org.tzi.use.uml.ocl.value.Value;
 import org.tzi.use.uml.sys.MSystem;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 /**
  * TODO
  * @author Khanh-Hoang Doan
@@ -73,7 +62,7 @@ import org.w3c.dom.NodeList;
 public class QualityPropertiesEval extends JPanel implements View {
 
 	private MSystem metaSystem;
-	private Evaluator evaluator;
+	
 	private JTable tblPropertiesEval;
 	private JButton btnAddNew;
 	private JButton btnRefresh;
@@ -104,7 +93,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 			}
 		});
 		
-		List<QualityProperty> propertyList = loadPropertyLibrary();
+		List<QualityProperty> propertyList = MetricAPI.loadPropertyLibrary(metaSystem);
 		tableModel.setList(propertyList);
 		
 		//A JTable must be in a JScrollPane so that the Header will be shown
@@ -186,7 +175,7 @@ public class QualityPropertiesEval extends JPanel implements View {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				List<QualityProperty> propertyList = loadPropertyLibrary();
+				List<QualityProperty> propertyList = MetricAPI.loadPropertyLibrary(metaSystem);
 				tableModel.setList(propertyList);
 			}
 		});
@@ -197,60 +186,6 @@ public class QualityPropertiesEval extends JPanel implements View {
 		add(bottomPanel, BorderLayout.SOUTH);
 	}
 	
-		
-	//Load property library defined in an XML file
-	public List<QualityProperty> loadPropertyLibrary(){
-		List<QualityProperty> result = new ArrayList<QualityProperty>();
-		try {
-			File xmlFile = MetricAPI.designSmellXMLFile.toFile();
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			Document doc = dBuilder.parse(xmlFile);
-			NodeList nList = doc.getElementsByTagName("DesignSmell");
-			for(int i=0; i<nList.getLength(); i++)
-			{				
-				Node nNode = nList.item(i);
-				if(nNode.getNodeType() == Node.ELEMENT_NODE)
-				{
-					Element eElement = (Element) nNode;
-					QualityProperty property = new QualityProperty(
-							eElement.getElementsByTagName("Name").item(0).getTextContent(),
-							eElement.getElementsByTagName("Desc").item(0).getTextContent(),
-							eElement.getElementsByTagName("Type").item(0).getTextContent(),
-							eElement.getElementsByTagName("Severity").item(0).getTextContent(),
-							eElement.getElementsByTagName("OCLexpression").item(0).getTextContent(),
-							eElement.getElementsByTagName("SelectExpression").item(0).getTextContent(),
-							eElement.getElementsByTagName("Context").item(0).getTextContent());
-					        	        
-			        Expression expr = MetricAPI.compileMetaOCLExpr(metaSystem, property.getOclExpression());
-			        try {
-			        	if(expr == null) //if there is an error in compiling the Ocl expression
-			        		property.setIsValidOclExpression(false);
-			        	else
-			        	{
-				            // evaluate it with current system state
-				            evaluator = new Evaluator(true);
-				            Value val = evaluator.eval(expr, metaSystem.state());
-				            if(val.isBoolean())//if the Ocl expression is a Boolean expression
-				            {
-				            	property.setIsValidOclExpression(true);
-				            	property.setEvaluation(Boolean.parseBoolean(val.toString()));
-				            }
-				            else
-				            	property.setIsValidOclExpression(false);
-			        	}
-			        } catch (MultiplicityViolationException e) {
-			        	property.setIsValidOclExpression(false);
-			        	property.setEvaluation(false);
-			        }
-			        result.add(property);
-				}				
-			}
-			
-		} catch (Exception e) {
-	         e.printStackTrace();}
-		return result;
-	}
 
 	private void setTableColumnWidths(int[] columnWidths) {
 	    TableColumnModel columnModel = tblPropertiesEval.getColumnModel();

@@ -36,6 +36,7 @@ import java.io.Reader;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -53,6 +54,9 @@ import java.util.TreeSet;
 import org.tzi.use.config.Options;
 import org.tzi.use.gen.tool.GGeneratorArguments;
 import org.tzi.use.gen.tool.GNoResultException;
+import org.tzi.use.gui.views.qualityassessment.Metric;
+import org.tzi.use.gui.views.qualityassessment.MetricAPI;
+import org.tzi.use.gui.views.qualityassessment.QualityProperty;
 import org.tzi.use.main.MonitorAspectGenerator;
 import org.tzi.use.main.Session;
 import org.tzi.use.main.runtime.IRuntime;
@@ -66,6 +70,7 @@ import org.tzi.use.runtime.shell.impl.PluginShellCmdFactory.PluginShellCmdContai
 import org.tzi.use.uml.mm.MAssociation;
 import org.tzi.use.uml.mm.MClass;
 import org.tzi.use.uml.mm.MClassInvariant;
+import org.tzi.use.uml.mm.MMInstanceGenerator;
 import org.tzi.use.uml.mm.MMPrintVisitor;
 import org.tzi.use.uml.mm.MMVisitor;
 import org.tzi.use.uml.mm.MModel;
@@ -420,6 +425,12 @@ public final class Shell implements Runnable, PPCHandler {
 			cmdGenMM(null);
 		} else if (line.startsWith("genmm ")) {
 			cmdGenMM(line.substring(6));
+		} else if (line.startsWith("metric")) {
+			cmdMetric(line.substring(7));
+		} else if (line.startsWith("allMetric")) {
+			cmdMetricAll(line.substring(10));
+		} else if (line.startsWith("smell")) {
+			cmdSmellDetection(line.substring(6));
 		} else if (line.equals("genmonitor")) {
 			cmdGenMonitor();
 		} else if (line.startsWith("info ")) {
@@ -771,7 +782,172 @@ public final class Shell implements Runnable, PPCHandler {
 			}
 		}*/
 	}
-
+	/**
+	 * Prints the metrics of the current model two a txt file.
+	 * input: the list of metrics need to be measured, starts by 'm' or 'c' indicates model metrics or class metrics
+	 */
+	private void cmdMetric(String input) throws NoSystemException {
+		MSystem system = system();
+		MSystem metaSystem = fSession.metaSystem();
+		String scope = input.trim().substring(0, 1);
+		String metricNames = input.trim().substring(2);
+		String metrics[] = metricNames.split(",");
+		if(!scope.equals("c")&& !scope.equals("m"))
+		{
+			Log.error("The first parameter must be 'c' or 'm'!");
+			return;
+		}
+		String filename = scope.equals("c")? "classmetrics.txt":"modelmetrics.txt";
+		
+		PrintWriter out = null;
+		try {			
+			
+			//if the file does not exist -> write the header line (name of metrics will be recorded)  
+			if(!Files.exists(Options.homeDir.resolve(filename)))
+			{
+				out = new PrintWriter(new BufferedWriter(new FileWriter(
+						filename)));
+				out.print("modelname,");
+				out.print("name");
+				//write the name of metrics
+				for(String name:metrics)
+					out.print("," + name);
+				out.print(System.getProperty("line.separator"));
+			}
+			else
+				out = new PrintWriter(new BufferedWriter(new FileWriter(
+						filename, true)));
+				
+						
+			
+			//write the model name if we want to measure the model level metrics		
+			if(scope.equals("m"))
+			{
+				out.print(system.model().name() + "," + system.model().name());
+				for(String name:metrics)
+				{
+					Metric mt = new Metric(name, "Model");
+					out.print(",");
+					out.print(mt.evaluate(metaSystem, null));
+				}
+				out.println();
+			}
+			//or the class name if we want to measure the class level metrics
+			if(scope.equals("c"))
+			{
+				for(MClass cls: system.model().classes())
+				{
+					out.print(system.model().name() + "," + cls.name());
+					for(String name:metrics)
+					{
+						Metric mt = new Metric(name, "Class");
+						out.print(",");
+						out.print(mt.evaluate(metaSystem, cls));
+					}
+					out.println();
+				}
+			}
+			
+			
+		} catch (IOException ex) {
+			Log.error(ex.getMessage());
+		} finally {
+			if (out != null) {
+				out.flush();
+				System.out.println("Record metrics successfully!");
+				if (filename != null) {
+					out.close();
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Prints the metrics of all model (.use spec) in a directory into .txt files
+	 * @param input: the directory containing a set of models (.use spec)
+	 */
+	private void cmdMetricAll(String input){
+		File directory= new File(input);
+		PrintWriter out = null;
+		try {
+			out = new PrintWriter(new BufferedWriter(new FileWriter("metricLog.txt", true)));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		};
+		for (File file : directory.listFiles())
+		{
+			String fileName = file.getName();
+			
+			if (fileName.endsWith("use")) //if the file is a USE spec
+			{
+		       String oldModel = fSession.system().model().name();
+		       cmdOpenUseFile(file.getPath());
+		       
+		       if(oldModel.equals(fSession.system().model().name())) //if compile unsuccessfully
+		       {
+		    	   out.println(fileName);	   
+		       }
+		       else
+		       {
+		    	   	try {
+						//cmdMetric("m DSC, NAssoc, MaxDIT, AHF,MHF,AIF,MIF,PF, A");
+						cmdMetric("c NAC, NDC, NAS");
+		    	   		//cmdMetric("c DAC,DAC1");
+					} catch (NoSystemException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+		       }
+			}	
+		}
+		out.flush();
+		System.out.println("Record metrics successfully!");
+	}
+	
+	/**
+	 * Detect smells on a set of models stored in a directory
+	 * @param input: the directory containing a set of models need to check for smell
+	 * @throws NoSystemException 
+	 */
+	private void cmdSmellDetection(String input) throws NoSystemException
+	{
+		String oldModel, newModel;
+		File directory= new File(input);
+		PrintWriter out = null;
+		int modelNo =0;
+		try {
+			out = new PrintWriter(new BufferedWriter(new FileWriter(
+					"smells.csv")));
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		for (File file : directory.listFiles())
+		{
+			String fileName = file.getName();
+			
+			if (fileName.endsWith("use")) //if the file is a USE spec
+			{
+				oldModel = fSession.system().model().name();
+				cmdOpenUseFile(file.getPath());
+				newModel =  fSession.system().model().name();
+				if(!oldModel.equals(newModel)) //if compile successfully
+				{
+	    	   		List<QualityProperty> propertyList = MetricAPI.loadPropertyLibrary(fSession.metaSystem());
+	    	   		modelNo++;
+	    	   		for(QualityProperty s: propertyList)
+	    	   		{
+	    	   			out.println(modelNo + "," + newModel + "," + fSession.system().model().classes().size() + "," + s.getId() + "," + s.getEvaluation());
+	    	   		}
+				}
+			}	
+		}
+		out.flush();
+		System.out.println("Record smells successfully!");
+	}
+	
 	/**
 	 * Writes source files for aspect-based monitoring of applications.
 	 */
@@ -1263,7 +1439,7 @@ public final class Shell implements Runnable, PPCHandler {
 	 */
 	private void cmdOpenUseFile(String file) {
 		MModel model = null;
-
+		final MSystem system, metaSystem;
 		String filename = getFilenameToOpen(file);
 
 		try (BufferedInputStream specStream = new BufferedInputStream(new FileInputStream(filename))){
@@ -1280,11 +1456,38 @@ public final class Shell implements Runnable, PPCHandler {
 
 		// compile ok?
 		if (model != null) {
+			//compile the metamodel
+			Log.println("loading metamodel ...");
+        	
+            MModel mModel = null;
+            try (InputStream iStream = Files.newInputStream(Options.metamodelFilename)) {
+            	mModel = USECompiler.compileSpecification(iStream, Options.metamodelFilename.toAbsolutePath().toString(),
+                		new PrintWriter(System.err), new ModelFactory());
+                Log.println("done.");
+            } catch (IOException ex) {
+            	Log.println("unable to load metamodel.");
+            }
+            system = new MSystem(model);
+        	if(mModel!=null){
+        		metaSystem = new MSystem(mModel);
+            	//auto generate meta-instance and add it into metaSystem
+        		MMInstanceGenerator v = new MMInstanceGenerator();
+            	try {
+					v.execute(system, metaSystem);
+				} catch (MSystemException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+        	}
+        	else
+        		metaSystem = null;
+        	
 			// print some info about model
 			Log.println(model.getStats());
 
 			// create system
-			fSession.setSystem(new MSystem(model));
+			fSession.setSystem(system);
+			fSession.setMetaSystem(metaSystem);
 		}
 
 		setFileClosed();

@@ -67,6 +67,17 @@ public class Metric{
 		this.oclDefinition = oclDefinition;
 		this.value = -1;
 	}
+	
+	public Metric(String shortName, String scope) {
+		super();
+		this.shortName = shortName;
+		this.name = "";
+		this.description = "";
+		this.type = "";
+		this.scope = scope;
+		this.oclDefinition = oclDefinition;
+		this.value = -1;
+	}
 	private String shortName;
 	private String name;
 	private String description;

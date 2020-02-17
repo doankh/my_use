@@ -2990,7 +2990,14 @@ operations
 	--(including the overridden methods, excluding the inherited methods)
 	APPM(): Real = 
 		localOperations()->collect(op|op.ownedParameterRedefined->size())->sum()/NOM()
-	
+		
+	--1.5. Number of invariants defined in a class (CNIV)
+	CINV(): Integer =
+		self.class.ownedRule->size()
+	--1.6. Number of pre-post conditions of a class (NPP)
+	NPP(): Integer =
+		self.class.ownedOperation.precondition->size() + self.class.ownedOperation.postcondition->size()
+		
 	---------------------2. Complexity metrics----------------------
 	----------------------------------------------------------------
 	--2.1. Number of direct children (NOC)
@@ -3006,11 +3013,11 @@ operations
 		(NMO()*DIT())/(NOM()+NMI())
 	
 	--2.4. Number of all ancestors (NOAC)
-	NOAC(): Integer = 
+	NAC(): Integer = 
 		allAncestors()->size()
 	
-	--2.5. Number of all descendants (NODC)
-	NODC(): Integer = 
+	--2.5. Number of all descendants (NDC)
+	NDC(): Integer = 
 		allDescendants()->size()
 	
 	--2.6. Number of hierarchies
@@ -3047,9 +3054,9 @@ operations
 	DAC1(): Integer = 
 		userdefinedTypeAttributes()->collect(type)->asSet()->size()
 	
-	--4.3. Number of Association, including the inherited association (NAS)
+	--4.3. Number of Association, excluding the inherited associations (NAS)
 	NAS(): Integer =
-		allAssociations()->size() + allAncestors().collect(association)->size()
+		allAssociations()->size()
 		
 	--4.4. Coupling Between Object (CBO) or efferent coupling (Ce). !!	
 	CBO(): Integer =
@@ -3064,8 +3071,45 @@ operations
 	--4.6. Direct Class Coupling (DCC)
 	DCC(): Integer =
 		Class.allInstances()->excluding(self.class)->select(c|isCoupledbyAttribute(c) 
-		or isCoupledbyParameter(c))->size()
+		or isCoupledbyParameter(c))->asSet()->size()
 	
+	--------------------5. Cohesion metrics-------------------
+	----------------------------------------------------------
+	--5.1. Cohesion among Methods of a Class (CAMC): 
+	--This metric computes the relatedness among methods of a class based upon the parameter list of the methods
+	CAMC(): Real =
+		let M = localOperations() in
+		let l = M->collect(m|m.ownedParameterRedefined.type)->asSet()->size() in
+		let a = M->collect(m|m.ownedParameterRedefined.type->asSet()->size())->sum() in
+			a/(l*M->size())	
+	
+	--5.2. Normalized Hamming Distance (NHD):
+	--This metric computes . . .
+	NHD(): Real =
+		let M = localOperations() in
+		let L = M->collect(m|m.ownedParameterRedefined.type)->asSet() in
+		let Tmp = L->iterate(t:Type; S:Integer=0|
+			let x = M->select(m|m.ownedParameterRedefined.type->includes(t))->size() in 
+			S + x*(M->size()-x)	
+		) in 
+		1- 2/(L->size()*M->size()*(M->size()-1))* Tmp
+	
+	--5.3. 	Method-Method  through  Attributes  Cohesion  (MMAC):
+	--The MMAC is the average cohesion of all pairs of methods
+	MMAC():Real =
+		let M = localOperations() in
+		let L = M->collect(m|m.ownedParameterRedefined.type)->asSet() in
+		let Tmp = L->iterate(t:Type; S:Real=0|
+			let x = M->select(m|m.ownedParameterRedefined.type->includes(t))->size()
+			in S + x*(x-1)	
+		) in 
+
+		if (M->size()=0 or L->size()=0) then 0
+		else if(M->size()=1) then 1
+			else Tmp/( L->size()* M->size()*(M->size()-1)) 
+			endif
+		endif
+
 	--$NEW_CLASS_METRIC$--
 end
 
@@ -3084,9 +3128,22 @@ operations
 	--1.1. Total number of classes in the design (DSC)
 	DSC(): Integer = 
 		Class.allInstances()->size()
+		
 	--1.2. Number of total Associations (NAssoc)
 	NAssoc(): Integer = 
 		Association.allInstances()-> size()
+		
+	--1.3. Number of methods of all classes (NOM)
+	NOM(): Integer =
+		Class.allInstances()->collect(c|c.metrics.NOM())->sum()
+		
+	--1.4. Number of invariants defined in the model (NIV)
+	DINV(): Integer = 
+		Class.allInstances()->collect(c|c.metrics.CINV())->sum()
+	
+	--1.5. Number of pre-post conditions defined in the model (NPP)
+	NPP(): Integer =	
+		Class.allInstances()->collect(c|c.metrics.NPP())->sum()
 	
 	---------------------2. Complexity metrics------------------
 	------------------------------------------------------------
@@ -3113,10 +3170,32 @@ operations
 	--3.3. Polymorphism Factor (PF)
 	PF(): Real =
 		(Class.allInstances()->collect(c|c.metrics.NMO())->sum())/
-		(Class.allInstances()->collect(c|(c.metrics.NOM() - c.metrics.NMO()) * c.metrics.NODC())->sum())
+		(Class.allInstances()->collect(c|(c.metrics.NOM() - c.metrics.NMO()) * c.metrics.NDC())->sum())
 	--3.4. Abstractness (A)
 	A(): Real =
 		(Class.allInstances()->select(c|c.isAbstract = true)->size())/DSC()
+	
+	AHF():Real = 
+	(Class.allInstances()->collect(c|
+		c.ownedAttribute->collect(a|
+			if (a.visibility = VisibilityKind::public) then 0
+			else if (a.visibility = VisibilityKind::private) then 1
+		        else c.metrics.NDC()/(Class.allInstances()->size() -1)
+		        endif
+			endif)
+	->sum())->sum())/
+	(Class.allInstances()->collect(c|c.metrics.NOA())->sum())
+	
+	MHF():Real = 
+	(Class.allInstances()->collect(c|
+		c.ownedOperation->collect(op|
+			if (op.visibility = VisibilityKind::public) then 0
+			else if (op.visibility = VisibilityKind::private) then 1
+		        else c.metrics.NDC()/(Class.allInstances()->size() -1)
+		        endif
+			endif)
+	->sum())->sum())/
+	(Class.allInstances()->collect(c|c.metrics.NOM())->sum())
 	
 	--$NEW_MODEL_METRIC$--
 end

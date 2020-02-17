@@ -34,6 +34,14 @@ associations within a class diagram</Description>
 	  <Definition></Definition>
   </Metric>
   <Metric>
+      <ShortName>NOM</ShortName>
+      <Name>Number of local methods defined in the model</Name>
+      <Description>Total number of local methods defined in all classes in the model. The inheritance  methods are not taken into account</Description>
+      <Type>Size</Type>
+      <Scope>Model</Scope>
+	  <Definition></Definition>
+  </Metric>
+  <Metric>
       <ShortName>SIZE2</ShortName>
       <Name>The size of a class</Name>
       <Description>SIZE2 = NOA + NOM</Description>
@@ -218,6 +226,72 @@ DIT value obtained for each class of the class diagram</Description>
       <Description>It is the number of attributes the this class inherits from all ancestor classes (not include the redefined ones).
        </Description>
       <Type>OO Design</Type>
+      <Scope>Class</Scope>
+	  <Definition></Definition>
+  </Metric>
+  <Metric>
+      <ShortName>CINV</ShortName>
+      <Name>Number of invariants defined in a class</Name>
+      <Description>It measures the number of constraints defined in the context of a class.
+		</Description>
+      <Type>Size</Type>
+      <Scope>Class</Scope>
+	  <Definition></Definition>
+  </Metric>
+  <Metric>
+      <ShortName>DINV</ShortName>
+      <Name>Number of invariants defined in a model</Name>
+      <Description>It measures the total number of constraints defined in the context of all classes in a model.
+		</Description>
+      <Type>Size</Type>
+      <Scope>Model</Scope>
+	  <Definition></Definition>
+  </Metric>
+  <Metric>
+      <ShortName>NPP</ShortName>
+      <Name>Number of pre-post conditions defined in a class</Name>
+      <Description>It measures the number of pre-post conditions defined in a class.
+		</Description>
+      <Type>Size</Type>
+      <Scope>Class</Scope>
+	  <Definition></Definition>
+  </Metric>
+  <Metric>
+      <ShortName>NPP</ShortName>
+      <Name>Number of pre-post conditions defined in a model</Name>
+      <Description>It measures the total number of pre-post conditions defined in for all classes in a model.
+		</Description>
+      <Type>Size</Type>
+      <Scope>Model</Scope>
+	  <Definition></Definition>
+  </Metric>
+  <Metric>
+      <ShortName>CAMC</ShortName>
+      <Name>Cohesion among Methods of a Class</Name>
+      <Description>This metric computes the relatedness among methods of a class based upon the parameter list of the methods.
+		CAMC = a/kl, where, l is the number of distinct parameter types, k is
+		the number of methods and a is the summation of the number of distinct parameter types of each method in the class.
+		</Description>
+      <Type>Cohesion</Type>
+      <Scope>Class</Scope>
+	  <Definition></Definition>
+  </Metric>
+  <Metric>
+      <ShortName>NHD</ShortName>
+      <Name>Normalized Hamming Distance</Name>
+      <Description>
+		</Description>
+      <Type>Cohesion</Type>
+      <Scope>Class</Scope>
+	  <Definition></Definition>
+  </Metric>
+  <Metric>
+      <ShortName>MMAC</ShortName>
+      <Name>Method-Method  through  Attributes  Cohesion</Name>
+      <Description>
+		The MMAC is the average cohesion of all pairs of methods
+	  </Description>
+      <Type>Cohesion</Type>
       <Scope>Class</Scope>
 	  <Definition></Definition>
   </Metric>

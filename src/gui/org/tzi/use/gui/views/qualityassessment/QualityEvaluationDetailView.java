@@ -27,9 +27,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Paths;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -50,7 +47,6 @@ import org.tzi.use.gui.views.diagrams.classdiagram.ClassDiagramView;
 import org.tzi.use.gui.views.diagrams.classdiagram.ClassNode;
 import org.tzi.use.gui.views.diagrams.elements.edges.EdgeBase;
 import org.tzi.use.main.Session;
-import org.tzi.use.parser.ocl.OCLCompiler;
 import org.tzi.use.uml.mm.MAssociation;
 import org.tzi.use.uml.mm.MAssociationClass;
 import org.tzi.use.uml.mm.MAttribute;
@@ -130,49 +126,33 @@ private Evaluator evaluator;
         fTextOut.setEditable(false);
         fTextOut.setLineWrap(true);
         fTextOut.setFont(evalFont);
+        //Evaluate the auto generated meta-query and show result in fTextOut
+        String evaluationInv = designSmell.getSelectExpression();
+		String violatingElementKind = designSmell.getContext();	
+
+		Expression expr = MetricAPI.compileMetaOCLExpr(fSession.metaSystem(), evaluationInv);        
         
-        try
-        {
-	        //Evaluate the auto generated meta-query and show result in fTextOut
-	        String evaluationInv = designSmell.getSelectExpression();
-			String errFilename = Paths.get(System.getProperty("user.dir")).resolve("OCLEvaluationLog.txt").toAbsolutePath().toString();
-			String violatingElementKind = designSmell.getContext();	
-			PrintWriter out = new PrintWriter(errFilename);
-	
-	        
-	        // compile invariant
-	        Expression expr = OCLCompiler.compileExpression(
-	        		fSession.metaSystem().model(),
-	        		fSession.metaSystem().state(),
-	        		evaluationInv, 
-	                "Error", 
-	                out, 
-	                fSession.metaSystem().varBindings());
-	        	        
-	        out.flush();
-	        
-	        try {
-	            // evaluate it with current system state
-	            evaluator = new Evaluator(true);
-	            Value val = evaluator.eval(expr, fSession.metaSystem().state(), fSession.metaSystem().varBindings());            
-	            
-	            //highlight the violating classes on the class diagram by setting it selected
-	            if(val.isSet()) 
-	            {
-	            	org.tzi.use.uml.ocl.type.Type t = ((CollectionType)val.type()).elemType();
-	            	String[] metaObectsNames = val.toString().substring(4, val.toString().length()-1).split(",");
-	            	highlightViolatingElements(fSession.system().model(), metaObectsNames, t.shortName());
-	            	fTextOut.setText(generateOutput(fSession.system().model(), metaObectsNames, t.shortName(), violatingElementKind));
-	            }
-	            else
-	            {
-	            	// print result
-		            String result = val.toStringWithType();
-		            fTextOut.setText(result);
-	            }
-	        } catch (MultiplicityViolationException e) {
-	        } 
-        } catch(IOException ex){}
+        try {
+            // evaluate it with current system state
+            evaluator = new Evaluator(true);
+            Value val = evaluator.eval(expr, fSession.metaSystem().state(), fSession.metaSystem().varBindings());            
+            
+            //highlight the violating classes on the class diagram by setting it as selected
+            if(val.isSet()) 
+            {
+            	org.tzi.use.uml.ocl.type.Type t = ((CollectionType)val.type()).elemType();
+            	String[] metaObectsNames = val.toString().substring(4, val.toString().length()-1).split(",");
+            	highlightViolatingElements(fSession.system().model(), metaObectsNames, t.shortName());
+            	fTextOut.setText(generateOutput(fSession.system().model(), metaObectsNames, t.shortName(), violatingElementKind));
+            }
+            else
+            {
+            	// print result
+	            String result = val.toStringWithType();
+	            fTextOut.setText(result);
+            }
+        } catch (MultiplicityViolationException e) {
+        } 
         
         JLabel textOutLabel = new JLabel("Violating elements:");
         textOutLabel.setLabelFor(fTextOut);

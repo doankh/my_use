@@ -22,9 +22,11 @@
 package org.tzi.use.uml.mm;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 
 import org.tzi.use.uml.mm.commonbehavior.communications.MSignal;
@@ -35,7 +37,8 @@ import org.tzi.use.uml.ocl.type.EnumType;
 import org.tzi.use.uml.ocl.type.TupleType;
 import org.tzi.use.uml.ocl.type.TupleType.Part;
 import org.tzi.use.uml.ocl.type.Type;
-import org.tzi.use.util.StringUtil;
+import org.tzi.use.uml.sys.MSystem;
+import org.tzi.use.uml.sys.MSystemException;
 
 /**
  * A visitor for producing a sequence of commands for generating the
@@ -49,6 +52,7 @@ import org.tzi.use.util.StringUtil;
 public class MMInstanceGenerator implements MMVisitor {    
     private LinkedList<String> soilCommands = new LinkedList<String>();
     private Set<Type> fDataTypes;
+    private Map<String,String> generalizationSet = new HashMap<String,String>();
     private boolean fPass1;
 //    private String fModelId;
 
@@ -109,7 +113,7 @@ public class MMInstanceGenerator implements MMVisitor {
     	visitAssociation(e.association());
     	
     }
-    //in UML 2.4, AssociationEnd becomes Property
+    //in UML 2.x, AssociationEnd becomes Property
     public void visitAssociationEnd(MAssociationEnd e) {
         String id = genInstance(e, "Property", e.association().name());
         boolean isComposite = false;
@@ -209,25 +213,26 @@ public class MMInstanceGenerator implements MMVisitor {
         for (MOperation opc : e.operations()){
         	opc.processWithVisitor(this);
         }
+        
     }
 
+    
     public void visitClassInvariant(MClassInvariant e) {
         String id = genInstance(e, "Constraint", e.cls().name());
-        soilCommands.add("set " + id + ".body := '" + 
+        /*soilCommands.add("set " + id + ".body := '" + 
                      StringUtil.escapeString(e.bodyExpression().toString(), '\'')
                      + "'");
-        // connect to ModelElement
-        soilCommands.add("insert (" + id + ", " +
-                     e.cls().name() + 
-                     "Class) into Constraint_ModelElement");
-//        // add to model namespace
-//        fOut.println("!insert (" + fModelId + ", " + id +
-//                     ") into Namespace_ModelElement");
+         */
+        // connect to Namespace (Class)
+        soilCommands.add("insert (" + e.cls().name() + "Class" + ", " + id +
+                     ") into C_Namespace_Context_Constraint_OwnedRule");
+
     }
 
     public void visitGeneralization(MGeneralization e) {
     	//FIXME: generalization of other elements, e.g., associations
-    	//if it is the generalization between class - class 
+    	//if it is the generalization between class - class
+    	
     	if(e.parent().model().getClass(e.parent().name()) != null && e.child().model().getClass(e.child().name()) != null)
     	{
 	    	String id = e.name();
@@ -236,11 +241,19 @@ public class MMInstanceGenerator implements MMVisitor {
 	    	soilCommands.add("insert ("+ e.parent().name() + "Class" + "," + id +") into A_Classifier_General_Generalization_Generalization");
 	    	//add C_Classifier_Specific_Generalization_Generalization between the subclass and the generalization instance 
 	    	soilCommands.add("insert ("+ e.child().name() + "Class" + "," + id +") into C_Classifier_Specific_Generalization_Generalization");
-	       
+	    	//Create an instance of GeneralizationSet
+	    	if(!generalizationSet.containsKey(e.parent().name()))
+	    	{
+	    		generalizationSet.put(e.parent().name(), e.parent().name()+"GS");
+	    		soilCommands.add("create " + e.parent().name()+ "GS" + " : " + "GeneralizationSet");
+	    		soilCommands.add("insert ("+ id + "," + e.parent().name()+ "GS" + ") into A_Generalization_Generalization_GeneralizationSet_GeneralizationSet");
+	    	}
+	    	else
+	    		soilCommands.add("insert ("+ id + "," + e.parent().name()+ "GS" + ") into A_Generalization_Generalization_GeneralizationSet_GeneralizationSet");
 	        // add A_Class_Class_Class_SuperClass association between superclass and subclass
 	    	//Create a link of the superclass-subclass association if it is a generalization between two classes
 	    	
-	    		soilCommands.add("insert (" + e.child().name() + "Class, " +
+    		soilCommands.add("insert (" + e.child().name() + "Class, " +
 	                     e.parent().name() + "Class) into A_Class_Class_Class_SuperClass");
     	}
         
@@ -258,7 +271,8 @@ public class MMInstanceGenerator implements MMVisitor {
         // visit classes/associationclasses in first pass only to gather required
         // DataTypes
         for (MClass cls : e.classes()) {
-            cls.processWithVisitor(this);
+        	if (!(cls instanceof MAssociationClass))
+        		cls.processWithVisitor(this);
         }
 
         for (MAssociationClass cls : e.getAssociationClassesOnly()) {
@@ -280,7 +294,7 @@ public class MMInstanceGenerator implements MMVisitor {
         
         // visit classes
         for (MClass cls : e.classes()) {
-            cls.processWithVisitor(this);
+            	cls.processWithVisitor(this);
         }
         
         // visit associationclasses
@@ -301,10 +315,10 @@ public class MMInstanceGenerator implements MMVisitor {
             gen.processWithVisitor(this);
         }
 
-        // visit constraints
-//        for (MClassInvariant inv : e.classInvariants()) {
-//            inv.processWithVisitor(this);
-//        }
+        //visit constraints
+        for (MClassInvariant inv : e.classInvariants()) {
+            inv.processWithVisitor(this);
+        }
     }
 
     public void visitOperation(MOperation e) {
@@ -359,6 +373,11 @@ public class MMInstanceGenerator implements MMVisitor {
 //	        	soilCommands.add("insert (" + id + "," + mOp.cls().name() + "_" + mOp.name() + "Operation" 
 //	                      + ") into A_Operation_Operation_Operation_RedefinedOperation");
 //	        }
+	        //visit pre-post conditions	        
+	        for (MPrePostCondition pre : e.preConditions())
+	        	pre.processWithVisitor(this);
+	        for (MPrePostCondition post : e.postConditions())
+	        	post.processWithVisitor(this);
 	        	
     	}
     }
@@ -368,7 +387,7 @@ public class MMInstanceGenerator implements MMVisitor {
     }
 
     public void visitParameter(MParameter e) {
-    	//add the type of the parameter to the list of Datatype first
+    	// add the type of the parameter to the list of Datatype first
     	Set<Type> allType = getInstantiationDatatype(e.type());
     	if (fPass1 ) {
             fDataTypes.addAll(allType);
@@ -380,7 +399,7 @@ public class MMInstanceGenerator implements MMVisitor {
         soilCommands.add("insert (" + namePrefix + "Operation ," +
                      id + ") into C_Operation_Operation_Parameter_OwnedParameter");
         
-        // add Property_Datatype link for type of attribute
+        // add Parameter_Datatype link for type of attribute
         String s;
         for(Type t: allType)
         {
@@ -394,7 +413,18 @@ public class MMInstanceGenerator implements MMVisitor {
 	}
     
     public void visitPrePostCondition(MPrePostCondition e) {
-        //FIXME: implement
+    	String namePrefix = e.cls().name() + "_" + e.operation().name();
+    	String id = genInstance(e, "Constraint", namePrefix);
+    	// add Constraint_Operation link
+    	String assocName = e.isPre()? 
+    			"C_Operation_PreContext_Constraint_Precondition":
+    				"C_Operation_PostContext_Constraint_Postcondition";
+        soilCommands.add("insert (" + namePrefix + "Operation ," +
+                     id + ") into " + assocName);
+        // connect to Namespace (Class)
+        soilCommands.add("insert (" + namePrefix + "Operation ," + id +
+                     ") into C_Namespace_Context_Constraint_OwnedRule");
+        
     }
 
 	@Override
@@ -474,5 +504,16 @@ public class MMInstanceGenerator implements MMVisitor {
 		
 		return element;
 		
+	}
+	
+	public void execute(MSystem system,MSystem metaSystem) throws MSystemException{
+		MMInstanceGenerator v = new MMInstanceGenerator();
+		system.model().processWithVisitor(v);
+		LinkedList<String> genSoilCommands = v.getGeneratedShellCommands();	
+		for (int i = 0; i < genSoilCommands.size(); i++)
+		{
+			//fLogWriter.println(genSoilCommands.get(i));
+			metaSystem.execute(genSoilCommands.get(i));
+		}
 	}
 }

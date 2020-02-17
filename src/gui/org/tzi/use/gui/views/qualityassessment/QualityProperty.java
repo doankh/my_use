@@ -21,6 +21,12 @@
 
 package org.tzi.use.gui.views.qualityassessment;
 
+import org.tzi.use.uml.ocl.expr.Evaluator;
+import org.tzi.use.uml.ocl.expr.Expression;
+import org.tzi.use.uml.ocl.expr.MultiplicityViolationException;
+import org.tzi.use.uml.ocl.value.Value;
+import org.tzi.use.uml.sys.MSystem;
+
 /**
  * TODO
  * @author Khanh-Hoang Doan
@@ -30,6 +36,7 @@ package org.tzi.use.gui.views.qualityassessment;
  * Data class for a quality property definition 
  */
 public class QualityProperty{
+	private String id;
 	private String name;
 	private String desc;
 	private String type;
@@ -40,7 +47,8 @@ public class QualityProperty{
 	private Boolean evaluation;
 	private Boolean isValidOclExpression;
 	
-	public QualityProperty(String sName, String sDecs, String sType, String sSeverity, String sOclExpression, String sSelectExpression, String sContext){
+	public QualityProperty(String sId, String sName, String sDecs, String sType, String sSeverity, String sOclExpression, String sSelectExpression, String sContext){
+		this.id = sId;
 		this.name = sName;
 		this.desc = sDecs;
 		this.type = sType;
@@ -51,11 +59,27 @@ public class QualityProperty{
 	}
 
 	/**
+	 * @return the id
+	 */
+	public String getId() {
+		return id;
+	}
+
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(String id) {
+		this.id = id;
+	}
+	
+	/**
 	 * @return the name
 	 */
 	public String getName() {
 		return name;
 	}
+
+
 
 	/**
 	 * @param name the name to set
@@ -157,8 +181,29 @@ public class QualityProperty{
 	/**
 	 * @param satisfaction the satisfaction to set
 	 */
-	public void setEvaluation(Boolean eval) {
-		this.evaluation = eval;
+	public void evaluate(MSystem metaSystem) {
+		Expression expr = MetricAPI.compileMetaOCLExpr(metaSystem, oclExpression);
+        try {
+        	if(expr == null) //if there is an error in compiling the Ocl expression
+        		isValidOclExpression = false;
+        	else
+        	{
+        		Evaluator evaluator;
+        		// evaluate it with the current system state
+	            evaluator = new Evaluator(true);
+	            Value val = evaluator.eval(expr, metaSystem.state());
+	            if(val.isBoolean())//if the Ocl expression is a Boolean expression
+	            {
+	            	isValidOclExpression = true;
+	            	evaluation = Boolean.parseBoolean(val.toString());
+	            }
+	            else
+	            	isValidOclExpression = false;
+        	}
+        } catch (MultiplicityViolationException e) {
+        	isValidOclExpression = false;
+        	evaluation = false;
+        }
 	}
 
 	/**
@@ -174,5 +219,7 @@ public class QualityProperty{
 	public void setIsValidOclExpression(Boolean isValidOclExpression) {
 		this.isValidOclExpression = isValidOclExpression;
 	}
+	
+	
 		
 }

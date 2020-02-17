@@ -886,6 +886,9 @@ public class MainWindow extends JFrame {
         fActionViewCreateCommandList.setEnabled(on);
         fActionViewAssociationInfo.setEnabled(on);
         
+        //enable the metamodeling menu if fSession.hasMetaSystem = true
+        getJMenuBar().getMenu(4).setEnabled(fSession.hasMetaSystem());
+        
 		if (Options.doPLUGIN) {
 			for (AbstractAction currentAction : pluginActions.values()) {
 				currentAction.setEnabled(on);
@@ -1218,14 +1221,19 @@ public class MainWindow extends JFrame {
             	if(mmodel!=null){
 	            	metaSystem = new MSystem(mmodel);
 	            	//auto generate meta-instance and add it into metaSystem
-	            	generateMetaInstances(system, metaSystem);
-	            	getJMenuBar().getMenu(4).setEnabled(true);
+	            	MMInstanceGenerator v = new MMInstanceGenerator();
+	            	try {
+						v.execute(system, metaSystem);
+					} catch (MSystemException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+	            	
 	            	//load the additional user-defined metrics to the metasystem
 	            	loadUserdefinedMetricstoMetasystem(metaSystem);
             	}
             	else{
             		metaSystem = null;
-            		getJMenuBar().getMenu(4).setEnabled(false);
         		}
             } else {
             	system = null;
@@ -1269,26 +1277,7 @@ public class MainWindow extends JFrame {
             return model;
             
         }
-        /**
-    	 * Generates metamodel instances of the loaded model into a soil file  
-    	 * @author Doan Hoang
-    	 */
-        
-    	private void generateMetaInstances(MSystem system,MSystem metaSystem) {	
-
-    		MMInstanceGenerator v = new MMInstanceGenerator();
-    		system.model().processWithVisitor(v);
-    		LinkedList<String> genSoilCommands = v.getGeneratedShellCommands();	
-    		/*fLogWriter.println("------------------------");
-    		fLogWriter.println("----Generated soil commands for meta-instances----");
-    		fLogWriter.println("------------------------");*/
-    		for (int i = 0; i < genSoilCommands.size(); i++)
-			{
-    			//fLogWriter.println(genSoilCommands.get(i));
-    			metaSystem.execute(genSoilCommands.get(i));
-			}
-        }
-    	
+            	
     	private void loadUserdefinedMetricstoMetasystem(MSystem metaSystem)
     	{
     		//load a set metric definitions from external XML file

@@ -143,6 +143,42 @@ public class MetricAPI {
 		}
 		
 	}
+	
+	//Load property library defined in a XML file
+	public static List<QualityProperty> loadPropertyLibrary(MSystem metaSystem){
+		List<QualityProperty> result = new ArrayList<QualityProperty>();
+		try {
+			File xmlFile = MetricAPI.designSmellXMLFile.toFile();
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.parse(xmlFile);
+			NodeList nList = doc.getElementsByTagName("DesignSmell");
+			for(int i=0; i<nList.getLength(); i++)
+			{				
+				Node nNode = nList.item(i);
+				if(nNode.getNodeType() == Node.ELEMENT_NODE)
+				{
+					Element eElement = (Element) nNode;
+					QualityProperty property = new QualityProperty(
+							eElement.getAttributes().getNamedItem("id").getNodeValue(),
+							eElement.getElementsByTagName("Name").item(0).getTextContent(),
+							eElement.getElementsByTagName("Desc").item(0).getTextContent(),
+							eElement.getElementsByTagName("Type").item(0).getTextContent(),
+							eElement.getElementsByTagName("Severity").item(0).getTextContent(),
+							eElement.getElementsByTagName("OCLexpression").item(0).getTextContent(),
+							eElement.getElementsByTagName("SelectExpression").item(0).getTextContent(),
+							eElement.getElementsByTagName("Context").item(0).getTextContent());
+					        	        
+			        property.evaluate(metaSystem);
+			        result.add(property);
+				}				
+			}
+			
+		} catch (Exception e) {
+	         e.printStackTrace();}
+		return result;
+	}
+		
 	//check whether a string is a numberic 
 	public static boolean isNumeric(String str) { 
 	  try {  
