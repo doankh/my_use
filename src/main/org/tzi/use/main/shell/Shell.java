@@ -665,7 +665,8 @@ public final class Shell implements Runnable, PPCHandler {
 		if (statement == null) {
 			return;
 		}
-
+		
+		
 		if (Log.isTracing()) {
 			Log.trace(this, "--- Executing shell command: " + statement.getShellCommand());
 		}
@@ -797,7 +798,7 @@ public final class Shell implements Runnable, PPCHandler {
 			Log.error("The first parameter must be 'c' or 'm'!");
 			return;
 		}
-		String filename = scope.equals("c")? "classmetrics.txt":"modelmetrics.txt";
+		String filename = scope.equals("c")? "classmetrics.csv":"modelmetrics.csv";
 		
 		PrintWriter out = null;
 		try {			
@@ -806,7 +807,7 @@ public final class Shell implements Runnable, PPCHandler {
 			if(!Files.exists(Options.homeDir.resolve(filename)))
 			{
 				out = new PrintWriter(new BufferedWriter(new FileWriter(
-						filename)));
+						filename, false)));
 				out.print("modelname,");
 				out.print("name");
 				//write the name of metrics
@@ -891,8 +892,8 @@ public final class Shell implements Runnable, PPCHandler {
 		       else
 		       {
 		    	   	try {
-						//cmdMetric("m DSC, NAssoc, MaxDIT, AHF,MHF,AIF,MIF,PF, A");
-						cmdMetric("c NAC, NDC, NAS");
+						//cmdMetric("c NAC,NDC,NAS");
+						cmdMetric("m NFLC");
 		    	   		//cmdMetric("c DAC,DAC1");
 					} catch (NoSystemException e) {
 						// TODO Auto-generated catch block
@@ -918,7 +919,7 @@ public final class Shell implements Runnable, PPCHandler {
 		int modelNo =0;
 		try {
 			out = new PrintWriter(new BufferedWriter(new FileWriter(
-					"smells.csv")));
+					"smells.csv",false)));
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

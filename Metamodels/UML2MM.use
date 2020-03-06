@@ -1020,7 +1020,7 @@ class InstanceSpecification < PackageableElement
 	oclType(): Set(Classifier) =
 		self.classifier
 	/*
-	new op, extend UML:
+	new op, UML extension:
 		navigate from an InstanceSpecification through a role name
 		return: a Bag() of InstanceSpecifications connect to self through the role name
 	*/
@@ -1030,11 +1030,11 @@ class InstanceSpecification < PackageableElement
 				->collect(iv|iv.oclAsType(InstanceValue).instance)->excluding(self)
 				
 	/*
-	new op, extend UML:
+	new op, UML extension:
 		get the value of an attribute of an InstanceSpecification through the attribute name
 	*/
-	attribute(attrName: String): ValueSpecification =
-		self.slot->select(definingFeature.name=attrName).value->asSequence()->first()
+	attribute(attrName: String): OclAny =
+		self.slot->select(definingFeature.name=attrName).value->asSequence()->first().getValue()
 		
   constraints
     /*
@@ -3197,5 +3197,25 @@ operations
 	->sum())->sum())/
 	(Class.allInstances()->collect(c|c.metrics.NOM())->sum())
 	
-	--$NEW_MODEL_METRIC$--
+	---------------------4. New metrics for models analysis----------------------
+	-----------------------------------------------------------------------------
+	--4.1. Number of abstract classes
+	NOAC(): Integer = 
+		Class.allInstances()->select(c|c.isAbstract = true)->size()
+		
+	--4.2. Number of concrete  classes
+	NOCC(): Integer = 
+		Class.allInstances()->select(c|c.isAbstract = false)->size()
+		
+	--4.3. Number of inherited classes 
+	NOIC(): Integer = 
+		Class.allInstances()->select(c|c.superClass->size()>0)->size()
+		
+	--4.4. Number of hierarchy relevant classes
+	NOLC(): Integer =
+		Class.allInstances()->select(c|not (c.superClass->isEmpty() and c.subClass->isEmpty()))->size()
+		
+	--4.5. Number of immediate featureless classes
+	NFLC(): Integer =
+		Class.allInstances()->select(c|c.isAbstract = false and c.ownedAttribute->isEmpty() and c.association->isEmpty)->size()
 end
